@@ -48,7 +48,8 @@
 	  (define (match-const val fm)
 		(cond
 		  ((pair? fm) '(#f))
-		  ((eqv? val fm) '(#t ()))))
+		  ((eqv? val fm) '(#t ()))
+		  (else '(#f))))
 	  (define (match-var name fm)
 		`(#t ((,name ,fm))))
 	  (define (match-fm ptn fm)
@@ -62,32 +63,34 @@
 					(tl-scs (car tl-rslt))
 					(scs (and hd-scs tl-scs)))
 			   (if scs
-				 (let ((hd-bdngs (cdr hd-rslt))
-					   (tl-bdngs (cdr tl-rslt)))
+				 (let ((hd-bdngs (cadr hd-rslt))
+					   (tl-bdngs (cadr tl-rslt)))
 				   (let merge ((to-mrg hd-bdngs) (bdngs tl-bdngs))
 					 (if (null? to-mrg)
-					   bdngs
+					   (list #t bdngs)
 					   (let*
-						 ((bdng (car to-mrg))
+						 ((bdng (begin (printf "merging: ~a into ~a~n" to-mrg bdngs) (car to-mrg)))
 						  (name (car bdng))
 						  (value (cadr bdng))
 						  (existing (assv name bdngs))
 						  (scs (or (not existing) (equal? value (cadr existing))))
 						  (new-bdngs (if scs (if (not existing) (cons bdng bdngs) bdngs) '())))
 						 (if scs
-						   (merge (cdr to-merge) new-bdngs)
+						   (merge (cdr to-mrg) new-bdngs)
 						   '(#f))))))
 				 '(#f)))
 			 '(#f)))
 		  (else
 			(match-ptn ptn fm))))
 	  (define (match-ptn ptn fm)
+		(printf "match-ptn~n  ptn=~a~n  fm=~a~n" ptn fm)
 		(let ((ptn-tp (car ptn))
 			  (ptn-val (cadr ptn)))
 		  (cond
 			((eqv? ptn-tp 'const) (match-const ptn-val fm))
 			((eqv? ptn-tp 'var) (match-var ptn-val fm))
-			((eqv? ptn-tp 'fm) (match-fm ptn-val fm)))))
+			((eqv? ptn-tp 'fm) (match-fm ptn-val fm))
+			(else (car car)))))
 	  (define (bind-and-evaluate bdngs fm)
 		(let ((new-rules
 				(let bind ((bs bdngs))
@@ -97,107 +100,124 @@
 					  (let* ((bdng (car bs))
 							 (name (car bdng))
 							 (value (cadr bdng)))
-						(list (list 'const name) value)
-						(bind (cdr bdngs))))))))
+							(list (list 'const name) (list 'quote value)))
+						(bind (cdr bs)))))))
 		  (evaluate-using-rules fallback new-rules fm)))
-	  (if (null? rules)
-		(apply fallback (list fm))
-		(let* ((rule (car rules))
-			   (rule-ptn (car rule))
-			   (rule-expr (cadr rule))
-			   (match-rslt (match-ptn rule-ptn fm))
-			   (match-scs (car match-rslt)))
-		  (if match-scs
-			(bind-and-evaluate (cadr match-rslt) rule-expr)
-			(recurse (cdr rules)))))))
-  (resolve
-	(let resolve-subfms ((subfms fm))
-	  (if (null? subfms)
-		null
-		(cons (resolve (car subfms)) (resolve-subfms (cdr subfms)))))))
+	  (cond
+		((null? rules)
+		 (begin
+		   (printf "rules exhausted for expr ~a~n" fm)
+		   (let ((rslt (apply fallback (list fm))))
+			 (printf "  fallback rslt (~a):~n    ~a~n" fm rslt)
+			 rslt)))
+		(else (let* ((rule (car rules))
+					 (rule-ptn (car rule))
+					 (rule-expr (cadr rule))
+					 (match-rslt (match-ptn rule-ptn fm))
+					 (match-scs (car match-rslt)))
+				(if match-scs
+				  (bind-and-evaluate (cadr match-rslt) rule-expr)
+				  (recurse (cdr rules))))))))
+  (cond
+	((not (list? in-fm)) (resolve in-fm))
+	((eqv? 'quote (car in-fm))
+	 (begin
+	   (printf "quote (~a) = ~a~n" in-fm (cadr in-fm))
+	   (cadr in-fm)))
+	(else
+	  (begin
+		(printf "in-fm = ~a~n" in-fm)
+		(resolve
+		  (let eval-subfms ((subfms in-fm))
+			(if (null? subfms)
+			  null
+			  (cons (evaluate-using-rules fallback in-rules (car subfms))
+					(eval-subfms (cdr subfms))))))))))
 
 (define base-rules '())
 (define-namespace-anchor ns-anchor)
 (define eval-ns (namespace-anchor->namespace ns-anchor))
 (define (evaluate-builtin rules fm)
-  (define (scheme-evaluate fm) (eval bi-expr eval-ns))
+  (define (scheme-evaluate fm)
+	(let ((quoted-list
+					(cons
+						(car fm)
+						(let quote-list ((ls (cdr fm)))
+							(cond
+								((null? ls) null)
+								((list? ls) (cons `(quote ,(car ls)) (quote-list (cdr ls))))
+								(else ls))))))
+	  (printf "scheme eval ~a~n" quoted-list)
+	  (eval quoted-list eval-ns)))
+  (printf "eval-builtin ~a~n" fm)
   (evaluate-using-rules scheme-evaluate rules fm))
 (define (push-base-rule rl) (set! base-rules (cons rl base-rules)))
 
-(define sample-rule
-  '((fm ((const multiply-int) (fm ((const int) (var x))) (fm ((const int) (var y)))))
-	(* x y)))
-
-;(def (rule (compile-pattern 'x) (const x)))
-;(def (rule (compile-pattern (quote 'x)) (var x)))
-;(def (rule (compile-pattern ()) (const ())))
-;(def (rule (compile-pattern ('hd . 'tl)) (cons (compile-pattern hd) (compile-pattern tl))))
-;(def (rule
-;	   (rule @ptn @expr)
-;	   (cons (compile-pattern ptn) expr)))
+(push-base-rule '((const compile-pattern) 'compile-pattern))
+(push-base-rule '((const rule) 'rule))
+(push-base-rule '((const cons) 'cons))
+(push-base-rule '((const list) 'list))
 
 (push-base-rule '((fm ((const compile-pattern) (var x))) '(const x)))
 (push-base-rule '((fm ((const compile-pattern) (fm ((const quote) (var x))))) '(var x)))
 (push-base-rule '((fm ((const compile-pattern) (fm ()))) '(const ())))
 (push-base-rule '((fm ((const compile-pattern) (fm ((var hd) . (var tl)))))
-				  (cons '(compile-pattern hd) '(compile-pattern tl))))
+				  (cons (compile-pattern hd) (compile-pattern tl))))
 (push-base-rule '((fm ((const rule) (var ptn) (var expr)))
-				  (cons '(compile-pattern ptn) expr)))
+				  (list (compile-pattern ptn) expr)))
 
-(push-base-rule
+(define (compile-operator op)
+  (let ((rslt
+		  (evaluate-builtin
+			base-rules
+			`(rule (quote ,op) (quote ,op)))))
+	(printf "compile-operator returned ~a~n" rslt)
+	rslt))
+
+(define (define-base-operator op)
+  (push-base-rule (compile-operator op)))
+
+(define (compile-rule ptn expr)
   (evaluate-builtin
 	base-rules
-	'(rule
-	   (evaluate-list 'rules 'list)
-	   (cons (evaluate rules (car list)) (evaluate-list rules (cdr list))))))
+	(list 'rule ptn expr)))
 
-(push-base-rule
-  (evaluate-builtin
-	base-rules
-	'(rule
-	   (evaluate-list 'rules ())
-	   null)))
+(define (define-base-rule ptn expr)
+  (push-base-rule (compile-rule ptn expr)))
 
-(push-base-rule
-  (evaluate-builtin
-	base-rules
-	'(rule
-	   (evaluate 'rules 'fm)
-	   (evaluate-using-rules rules (evaluate-list rules fm)))))
+(define-base-operator 'evaluate-list)
+;(define-base-rule
+;  '(evaluate-list 'rules ('head . 'tail))
+;  '(cons (evaluate rules head) (evaluate-list rules tail)))
 
-(push-base-rule
-  (evaluate-builtin
-	base-rules
-	'(rule
-	   (second 'x0 'x1)
-	   x1)))
-
-(push-base-rule
-  (evaluate-builtin base-rules
-	'(rule
-	   (evaluate-scope-clauses 'rules (head . tail))
-	   (second (evaluate rules head) (evaluate-scope-clauses rules tail)))))
-
-(push-base-rule
-  (evaluate-builtin base-rules
-	'(rule
-	   (evaluate-scope-clauses 'rules ())
-	   null)))
-
-(push-base-rule
-  (evaluate-builtin base-rules
-	'(rule
-	   (evaluate-scope-clauses 'rules ('clause))
-	   (evaluate rules clause))))
-
-(push-base-rule
-  (evaluate-builtin base-rules
-	'(rule
-	   (evaluate-scope-clauses 'rules ((define 'rule) . tail))
-	   (evaluate-scope-clauses (cons (evaluate rules rule) rules) tail))))
-
-(push-base-rule
-  (evaluate-builtin base-rules
-	'(rule
-	   (evaluate 'rules (scope . 'clauses))
-	   (evaluate-scope-clauses rules clauses))))
+;(define-base-rule
+;  '(evaluate-list 'rules ())
+;  'null)
+;
+;(define-base-rule
+;  '(evaluate 'rules 'fm)
+;  '(evaluate-using-rules rules (evaluate-list rules fm)))
+;
+;(define-base-rule
+;   '(second 'x0 'x1)
+;   'x1)
+;
+;(define-base-rule
+;  '(evaluate-scope-clauses 'rules (head . tail))
+;  '(second (evaluate rules head) (evaluate-scope-clauses rules tail)))
+;
+;(define-base-rule
+;  '(evaluate-scope-clauses 'rules ())
+;  'null)
+;
+;(define-base-rule
+;  '(evaluate-scope-clauses 'rules ('clause))
+;  '(evaluate rules clause))
+;
+;(define-base-rule
+;  '(evaluate-scope-clauses 'rules ((define 'rule) . tail))
+;  '(evaluate-scope-clauses (cons (evaluate rules rule) rules) tail))
+;
+;(define-base-rule
+;  '(evaluate 'rules (scope . 'clauses))
+;  '(evaluate-scope-clauses rules clauses))
