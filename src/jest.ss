@@ -145,44 +145,59 @@
 				  (cons '(compile-pattern ptn) expr)))
 
 (push-base-rule
+  (evaluate-builtin
+	base-rules
+	'(rule
+	   (evaluate-list 'rules 'list)
+	   (cons (evaluate rules (car list)) (evaluate-list rules (cdr list))))))
+
+(push-base-rule
+  (evaluate-builtin
+	base-rules
+	'(rule
+	   (evaluate-list 'rules ())
+	   null)))
+
+(push-base-rule
+  (evaluate-builtin
+	base-rules
+	'(rule
+	   (evaluate 'rules 'fm)
+	   (evaluate-using-rules rules (evaluate-list rules fm)))))
+
+(push-base-rule
+  (evaluate-builtin
+	base-rules
+	'(rule
+	   (second 'x0 'x1)
+	   x1)))
+
+(push-base-rule
   (evaluate-builtin base-rules
 	'(rule
-	   (evaluate 'rules 'args)
-	   (evaluate-using-rules rules args))))
+	   (evaluate-scope-clauses 'rules (head . tail))
+	   (second (evaluate rules head) (evaluate-scope-clauses rules tail)))))
 
-;(push-base-rule
-;  (evaluate-base
-;	'(rule
-;	   (get-second 'first 'second)
-;	   (begin
-;		 (evaluate-base first)
-;		 (evaluate-base second)))))
-;
-;(push-base-rule
-;  (evaluate-base
-;	'(rule
-;	   (evaluate-scope-arg 'arg 'arg-tl 'rls)
-;	   (get-second arg (evaluate-scope-args arg-tl rls)))))
-;
-;(push-base-rule
-;  (evaluate-base
-;	'(rule
-;	   (evaluate-scope-arg (def 'entry) 'arg-tl 'rls)
-;	   (evaluate-scope-args arg-tpl (cons (evaluate-base entry) rls)))))
-;
-;(push-base-rule
-;  (evaluate-base
-;	'(rule
-;	   (evaluate-scope-arg 'arg () 'rls)
-;	   (evaluate-base arg))))
-;
-;(push-base-rule
-;  (evaluate-base
-;	'(rule
-;	   (evaluate-scope-args 'args 'rls)
-;
-;(push-base-rule
-;  (evaluate-base
-;	'(rule
-;	   (scope 'args)
-;	   (evaluate-scope-args args ()))))
+(push-base-rule
+  (evaluate-builtin base-rules
+	'(rule
+	   (evaluate-scope-clauses 'rules ())
+	   null)))
+
+(push-base-rule
+  (evaluate-builtin base-rules
+	'(rule
+	   (evaluate-scope-clauses 'rules ('clause))
+	   (evaluate rules clause))))
+
+(push-base-rule
+  (evaluate-builtin base-rules
+	'(rule
+	   (evaluate-scope-clauses 'rules ((define 'rule) . tail))
+	   (evaluate-scope-clauses (cons (evaluate rules rule) rules) tail))))
+
+(push-base-rule
+  (evaluate-builtin base-rules
+	'(rule
+	   (evaluate 'rules (scope . 'clauses))
+	   (evaluate-scope-clauses rules clauses))))
