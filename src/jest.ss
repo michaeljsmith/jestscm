@@ -57,59 +57,59 @@
 		  ((null? ptn) (if (null? fm) '(#t ()) '(#f)))
 		  ((pair? ptn)
 		   (if (pair? fm)
-			 (let* ((hd-rslt (match-ptn (car ptn) (car fm)))
-					(hd-scs (car hd-rslt))
-					(tl-rslt (if hd-scs (match-fm (cdr ptn) (cdr fm)) '(#f)))
-					(tl-scs (car tl-rslt))
-					(scs (and hd-scs tl-scs)))
-			   (if scs
-				 (let ((hd-bdngs (cadr hd-rslt))
-					   (tl-bdngs (cadr tl-rslt)))
-				   (let merge ((to-mrg hd-bdngs) (bdngs tl-bdngs))
-					 (if (null? to-mrg)
-					   (list #t bdngs)
-					   (let*
-						 ((bdng (begin (printf "merging: ~a into ~a~n" to-mrg bdngs) (car to-mrg)))
-						  (name (car bdng))
-						  (value (cadr bdng))
-						  (existing (assv name bdngs))
-						  (scs (or (not existing) (equal? value (cadr existing))))
-						  (new-bdngs (if scs (if (not existing) (cons bdng bdngs) bdngs) '())))
-						 (if scs
-						   (merge (cdr to-mrg) new-bdngs)
-						   '(#f))))))
+				 (let* ((hd-rslt (match-ptn (car ptn) (car fm)))
+								(hd-scs (car hd-rslt))
+								(tl-rslt (if hd-scs (match-ptn (cdr ptn) (cdr fm)) '(#f)))
+								(tl-scs (car tl-rslt))
+								(scs (and hd-scs tl-scs)))
+					 (if scs
+						 (let ((hd-bdngs (cadr hd-rslt))
+									 (tl-bdngs (cadr tl-rslt)))
+							 (let merge ((to-mrg hd-bdngs) (bdngs tl-bdngs))
+								 (if (null? to-mrg)
+									 (list #t bdngs)
+									 (let*
+										 ((bdng (begin (printf "merging: ~a into ~a~n" to-mrg bdngs) (car to-mrg)))
+											(name (car bdng))
+											(value (cadr bdng))
+											(existing (assv name bdngs))
+											(scs (or (not existing) (equal? value (cadr existing))))
+											(new-bdngs (if scs (if (not existing) (cons bdng bdngs) bdngs) '())))
+										 (if scs
+											 (merge (cdr to-mrg) new-bdngs)
+											 '(#f))))))
+						 '(#f)))
 				 '(#f)))
-			 '(#f)))
-		  (else
+			(else
 			(match-ptn ptn fm))))
 	  (define (match-ptn ptn fm)
-		(printf "match-ptn~n  ptn=~a~n  fm=~a~n" ptn fm)
-		(let ((ptn-tp (car ptn))
-			  (ptn-val (cadr ptn)))
-		  (cond
-			((eqv? ptn-tp 'const) (match-const ptn-val fm))
-			((eqv? ptn-tp 'var) (match-var ptn-val fm))
-			((eqv? ptn-tp 'fm) (match-fm ptn-val fm))
-			(else (car car)))))
+			(printf "match-ptn~n  ptn=~a~n  fm=~a~n" ptn fm)
+			(let ((ptn-tp (car ptn))
+						(ptn-val (cadr ptn)))
+				(cond
+					((eqv? ptn-tp 'const) (match-const ptn-val fm))
+					((eqv? ptn-tp 'var) (match-var ptn-val fm))
+					((eqv? ptn-tp 'fm) (match-fm ptn-val fm))
+					(else (car car)))))
 	  (define (bind-and-evaluate bdngs fm)
-		(let ((new-rules
-				(let bind ((bs bdngs))
-				  (if (null? bs)
-					in-rules
-					(cons
-					  (let* ((bdng (car bs))
-							 (name (car bdng))
-							 (value (cadr bdng)))
-							(list (list 'const name) (list 'quote value)))
-						(bind (cdr bs)))))))
-		  (evaluate-using-rules fallback new-rules fm)))
+			(let ((new-rules
+							(let bind ((bs bdngs))
+								(if (null? bs)
+									in-rules
+									(cons
+										(let* ((bdng (car bs))
+													 (name (car bdng))
+													 (value (cadr bdng)))
+											(list (list 'const name) (list 'quote value)))
+										(bind (cdr bs)))))))
+				(evaluate-using-rules fallback new-rules fm)))
 	  (cond
 		((null? rules)
 		 (begin
 		   (printf "rules exhausted for expr ~a~n" fm)
 		   (let ((rslt (apply fallback (list fm))))
-			 (printf "  fallback rslt (~a):~n    ~a~n" fm rslt)
-			 rslt)))
+				 (printf "  fallback rslt (~a):~n    ~a~n" fm rslt)
+				 rslt)))
 		(else (let* ((rule (car rules))
 					 (rule-ptn (car rule))
 					 (rule-expr (cadr rule))
@@ -158,12 +158,13 @@
 (push-base-rule '((const cons) 'cons))
 (push-base-rule '((const list) 'list))
 
-(push-base-rule '((fm ((const compile-pattern) (var x))) '(const x)))
-(push-base-rule '((fm ((const compile-pattern) (fm ((const quote) (var x))))) '(var x)))
-(push-base-rule '((fm ((const compile-pattern) (fm ()))) '(const ())))
-(push-base-rule '((fm ((const compile-pattern) (fm ((var hd) . (var tl)))))
+(push-base-rule '((fm ((const compile-pattern) . (fm ((var x) . (fm ()))))) (list 'const x)))
+(push-base-rule '((fm ((const compile-pattern) . (fm ((fm ((const quote) . (fm ((var x).(fm ())))))))))
+									(list 'var x)))
+(push-base-rule '((fm ((const compile-pattern) . (fm ((fm ()) . (fm ()))))) '(const ())))
+(push-base-rule '((fm ((const compile-pattern) . (fm ((fm ((var hd) . (var tl))) . (fm ())))))
 				  (cons (compile-pattern hd) (compile-pattern tl))))
-(push-base-rule '((fm ((const rule) (var ptn) (var expr)))
+(push-base-rule '((fm ((const rule) . (fm ((var ptn) . (fm ((var expr) . (fm ())))))))
 				  (list (compile-pattern ptn) expr)))
 
 (define (compile-operator op)
@@ -179,16 +180,16 @@
 
 (define (compile-rule ptn expr)
   (evaluate-builtin
-	base-rules
-	(list 'rule ptn expr)))
+		base-rules
+		`(rule (quote ,ptn) (quote ,expr))))
 
 (define (define-base-rule ptn expr)
   (push-base-rule (compile-rule ptn expr)))
 
 (define-base-operator 'evaluate-list)
-;(define-base-rule
-;  '(evaluate-list 'rules ('head . 'tail))
-;  '(cons (evaluate rules head) (evaluate-list rules tail)))
+(define-base-rule
+  '(evaluate-list 'rules ('head . 'tail))
+  '(cons (evaluate rules head) (evaluate-list rules tail)))
 
 ;(define-base-rule
 ;  '(evaluate-list 'rules ())
