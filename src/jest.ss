@@ -42,6 +42,10 @@
 
 #lang scheme
 
+(require scheme/list)
+(require scheme/string)
+
+(define dbg-indnt 0)
 (define (evaluate-using-rules fallback in-rules in-fm)
   (define (resolve fm)
 	(let recurse ((rules in-rules))
@@ -69,7 +73,10 @@
 								 (if (null? to-mrg)
 									 (list #t bdngs)
 									 (let*
-										 ((bdng (begin (printf "merging: ~a into ~a~n" to-mrg bdngs) (car to-mrg)))
+										 ((bdng (begin
+															(printf (string-append* "" (make-list dbg-indnt " ")))
+															(printf "merging: ~a into ~a~n" to-mrg bdngs)
+															(car to-mrg)))
 											(name (car bdng))
 											(value (cadr bdng))
 											(existing (assv name bdngs))
@@ -83,15 +90,27 @@
 			(else
 			(match-ptn ptn fm))))
 	  (define (match-ptn ptn fm)
-			(printf "match-ptn~n  ptn=~a~n  fm=~a~n" ptn fm)
-			(let ((ptn-tp (car ptn))
-						(ptn-val (cadr ptn)))
-				(cond
-					((eqv? ptn-tp 'const) (match-const ptn-val fm))
-					((eqv? ptn-tp 'var) (match-var ptn-val fm))
-					((eqv? ptn-tp 'fm) (match-fm ptn-val fm))
-					(else (car car)))))
-	  (define (bind-and-evaluate bdngs fm)
+			;(printf "match-ptn~n  ptn=~a~n  fm=~a~n" ptn fm)
+			(let ((match-ptn-rslt
+							(let ((ptn-tp (car ptn))
+										(ptn-val (cadr ptn)))
+								(cond
+									((eqv? ptn-tp 'const) (match-const ptn-val fm))
+									((eqv? ptn-tp 'var) (match-var ptn-val fm))
+									((eqv? ptn-tp 'fm) (match-fm ptn-val fm))
+									(else (car car))))))
+				(when (car match-ptn-rslt)
+					(begin
+						(printf (string-append* "" (make-list dbg-indnt " ")))
+						(printf "match scs:~n")
+						(printf (string-append* "" (make-list dbg-indnt " ")))
+						(printf "ptn=~a~n" ptn)
+						(printf (string-append* "" (make-list dbg-indnt " ")))
+						(printf "fm= ~a~n" fm)
+						(printf (string-append* "" (make-list dbg-indnt " ")))
+						(printf "bdngs = ~a~n~n" (cdr match-ptn-rslt))))
+				match-ptn-rslt))
+		(define (bind-and-evaluate bdngs fm)
 			(let ((new-rules
 							(let bind ((bs bdngs))
 								(if (null? bs)
@@ -106,9 +125,13 @@
 	  (cond
 		((null? rules)
 		 (begin
+			 (printf (string-append* "" (make-list dbg-indnt " ")))
 		   (printf "rules exhausted for expr ~a~n" fm)
 		   (let ((rslt (apply fallback (list fm))))
-				 (printf "  fallback rslt (~a):~n    ~a~n" fm rslt)
+				 (printf (string-append* "" (make-list dbg-indnt " ")))
+				 (printf "  fallback rslt (~a):~n" fm)
+				 (printf (string-append* "" (make-list dbg-indnt " ")))
+				 (printf "      ~a~n" rslt)
 				 rslt)))
 		(else (let* ((rule (car rules))
 					 (rule-ptn (car rule))
@@ -118,21 +141,37 @@
 				(if match-scs
 				  (bind-and-evaluate (cadr match-rslt) rule-expr)
 				  (recurse (cdr rules))))))))
-  (cond
-	((not (list? in-fm)) (resolve in-fm))
-	((eqv? 'quote (car in-fm))
-	 (begin
-	   (printf "quote (~a) = ~a~n" in-fm (cadr in-fm))
-	   (cadr in-fm)))
-	(else
-	  (begin
-		(printf "in-fm = ~a~n" in-fm)
-		(resolve
-		  (let eval-subfms ((subfms in-fm))
-			(if (null? subfms)
-			  null
-			  (cons (evaluate-using-rules fallback in-rules (car subfms))
-					(eval-subfms (cdr subfms))))))))))
+	(printf (string-append* "" (make-list dbg-indnt " ")))
+	(printf "{~n")
+	(printf (string-append* "" (make-list dbg-indnt " ")))
+	(printf "** Evaluating: ~a~n" in-fm)
+	(set! dbg-indnt (+ dbg-indnt 2))
+  (let
+		((eval-rslt
+			 (cond
+				 ((not (list? in-fm)) (resolve in-fm))
+				 ((eqv? 'quote (car in-fm))
+					(begin
+						(printf (string-append* "" (make-list dbg-indnt " ")))
+						(printf "quote (~a) = ~a~n" in-fm (cadr in-fm))
+						(cadr in-fm)))
+				 (else
+					 (begin
+						 (let
+							 ((subfms (let eval-subfms ((subfms in-fm))
+								 (if (null? subfms)
+									 null
+									 (cons (evaluate-using-rules fallback in-rules (car subfms))
+												 (eval-subfms (cdr subfms)))))))
+							 (printf (string-append* "" (make-list dbg-indnt " ")))
+							 (printf "Evaluated subfms: ~a~n" subfms)
+							 (resolve subfms)))))))
+		(set! dbg-indnt (- dbg-indnt 2))
+		(printf (string-append* "" (make-list dbg-indnt " ")))
+		(printf "-- Evaluated (~a): ~a~n" in-fm eval-rslt)
+		(printf (string-append* "" (make-list dbg-indnt " ")))
+		(printf "}~n~n")
+		eval-rslt))
 
 (define base-rules '())
 (define-namespace-anchor ns-anchor)
@@ -147,9 +186,9 @@
 								((null? ls) null)
 								((list? ls) (cons `(quote ,(car ls)) (quote-list (cdr ls))))
 								(else ls))))))
+		(printf (string-append* "" (make-list dbg-indnt " ")))
 	  (printf "scheme eval ~a~n" quoted-list)
 	  (eval quoted-list eval-ns)))
-  (printf "eval-builtin ~a~n" fm)
   (evaluate-using-rules scheme-evaluate rules fm))
 (define (push-base-rule rl) (set! base-rules (cons rl base-rules)))
 
@@ -159,11 +198,15 @@
 (push-base-rule '((const list) 'list))
 
 (push-base-rule '((fm ((const compile-pattern) . (fm ((var x) . (fm ()))))) (list 'const x)))
-(push-base-rule '((fm ((const compile-pattern) . (fm ((fm ((const quote) . (fm ((var x).(fm ())))))))))
-									(list 'var x)))
-(push-base-rule '((fm ((const compile-pattern) . (fm ((fm ()) . (fm ()))))) '(const ())))
+(push-base-rule '((fm ((const compile-pattern) . (fm ((fm ()) . (fm ()))))) '(fm ())))
 (push-base-rule '((fm ((const compile-pattern) . (fm ((fm ((var hd) . (var tl))) . (fm ())))))
-				  (cons (compile-pattern hd) (compile-pattern tl))))
+				  (list 'fm (cons (compile-pattern hd) (compile-pattern tl)))))
+(push-base-rule '((fm (
+											 (const compile-pattern) .
+											 (fm ((fm (
+																 (const quote) .
+																 (fm ((var x).(fm ()))))) . (fm ())))))
+									(list 'var x)))
 (push-base-rule '((fm ((const rule) . (fm ((var ptn) . (fm ((var expr) . (fm ())))))))
 				  (list (compile-pattern ptn) expr)))
 
