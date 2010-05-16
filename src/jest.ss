@@ -179,13 +179,15 @@
 (define (evaluate-builtin rules fm)
   (define (scheme-evaluate fm)
 	(let ((quoted-list
-					(cons
-						(car fm)
-						(let quote-list ((ls (cdr fm)))
-							(cond
-								((null? ls) null)
-								((list? ls) (cons `(quote ,(car ls)) (quote-list (cdr ls))))
-								(else ls))))))
+					(if (list? fm)
+						(cons
+							(car fm)
+							(let quote-list ((ls (cdr fm)))
+								(cond
+									((null? ls) null)
+									((list? ls) (cons `(quote ,(car ls)) (quote-list (cdr ls))))
+									(else ls))))
+						fm)))
 		(printf (string-append* "" (make-list dbg-indnt " ")))
 	  (printf "scheme eval ~a~n" quoted-list)
 	  (eval quoted-list eval-ns)))
@@ -232,16 +234,25 @@
 (define-base-operator 'evaluate-list)
 (define-base-rule
   '(evaluate-list 'rules ('head . 'tail))
-  '(cons (evaluate rules head) (evaluate-list rules tail)))
+  '(cons (list 'quote ('evaluate rules head)) ('evaluate-list rules tail)))
 
-;(define-base-rule
-;  '(evaluate-list 'rules ())
-;  'null)
-;
-;(define-base-rule
-;  '(evaluate 'rules 'fm)
-;  '(evaluate-using-rules rules (evaluate-list rules fm)))
-;
+(define-base-rule
+  '(evaluate-list 'rules ())
+  ''())
+
+(define-base-operator 'evaluate)
+(define-base-rule
+  '(evaluate 'rules 'fm)
+  '(evaluate-builtin rules fm))
+
+(define-base-rule
+  '(evaluate 'rules ('head . 'tail))
+  '(evaluate-builtin rules ('evaluate-list rules (cons head tail))))
+
+(evaluate-builtin
+	base-rules
+	'('evaluate base-rules '(+ 1 1)))
+
 ;(define-base-rule
 ;   '(second 'x0 'x1)
 ;   'x1)
