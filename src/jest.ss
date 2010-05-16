@@ -216,7 +216,7 @@
   (let ((rslt
 		  (evaluate-builtin
 			base-rules
-			`(rule (quote ,op) (quote ,op)))))
+			`(rule (quote ,op) (quote (quote ,op))))))
 	(printf "compile-operator returned ~a~n" rslt)
 	rslt))
 
@@ -249,30 +249,52 @@
   '(evaluate 'rules ('head . 'tail))
   '(evaluate-builtin rules ('evaluate-list rules (cons head tail))))
 
+;(define-base-rule
+;	'(evaluate 'rules (quote 'val))
+;	'val)
+(push-base-rule
+	'((fm ((const evaluate)
+				 . (fm ((var rules)
+						. (fm ((fm ((const quote)
+												. (fm ((var val)
+															 . (fm ()))))) . (fm ())))))))
+		val))
+
+;(evaluate-builtin
+;	base-rules
+;	'('evaluate base-rules '(+ 1 1)))
+
+(define-base-operator 'second)
+(define-base-rule
+   '(second 'x0 'x1)
+   'x1)
+
+(define-base-operator 'evaluate-scope-clauses)
+(define-base-rule
+  '(evaluate-scope-clauses 'rules ('head . 'tail))
+  '(second (evaluate rules head) (evaluate-scope-clauses rules tail)))
+
+(define-base-rule
+  '(evaluate-scope-clauses 'rules ())
+  ''())
+
+(define-base-rule
+  '(evaluate-scope-clauses 'rules ('clause))
+  '(evaluate rules clause))
+
+(define-base-rule
+  '(evaluate-scope-clauses 'rules ((define 'rule) . 'tail))
+  '(evaluate-scope-clauses (cons (evaluate rules rule) rules) tail))
+
+(define-base-operator 'scope)
+(define-base-rule
+  '(evaluate 'rules (scope . 'clauses))
+  '(evaluate-scope-clauses rules clauses))
+
 (evaluate-builtin
 	base-rules
-	'('evaluate base-rules '(+ 1 1)))
-
-;(define-base-rule
-;   '(second 'x0 'x1)
-;   'x1)
-;
-;(define-base-rule
-;  '(evaluate-scope-clauses 'rules (head . tail))
-;  '(second (evaluate rules head) (evaluate-scope-clauses rules tail)))
-;
-;(define-base-rule
-;  '(evaluate-scope-clauses 'rules ())
-;  'null)
-;
-;(define-base-rule
-;  '(evaluate-scope-clauses 'rules ('clause))
-;  '(evaluate rules clause))
-;
-;(define-base-rule
-;  '(evaluate-scope-clauses 'rules ((define 'rule) . tail))
-;  '(evaluate-scope-clauses (cons (evaluate rules rule) rules) tail))
-;
-;(define-base-rule
-;  '(evaluate 'rules (scope . 'clauses))
-;  '(evaluate-scope-clauses rules clauses))
+	'(evaluate
+		 base-rules
+		 '(scope
+				(define (rule 'x 1))
+				x)))
