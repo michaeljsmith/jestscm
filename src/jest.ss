@@ -252,7 +252,7 @@
 
 (define-base-rule
 	'(evaluate 'rules (rule 'ptn 'expr))
-	'(compile-rule-pattern-expression-pair (wrap-rule-with-evaluate ptn expr)))
+	'(compile-rule-pattern-expression-pair (wrap-rule-with-evaluate ptn expr rules)))
 
 (push-base-rule
 	'((fm ((const evaluate)
@@ -266,10 +266,6 @@
 (define-base-rule
 	'(evaluate2 'rules 'fm)
 	'(evaluate-builtin rules (list 'evaluate (list 'quote rules) (list 'quote fm))))
-
-;(define-base-rule
-;  '(evaluate 'old-rules (evaluate 'new-rules 'fm))
-;	'(evaluate-builtin new-rules (list 'evaluate new-rules fm)))
 
 (define-base-operator 'second)
 (define-base-rule
@@ -309,55 +305,32 @@
 		 (extract-bindings-from-pattern hd)
 		 (extract-bindings-from-pattern tl))) ; Might cause duplicates, but shouldn't matter.
 
-;(define-base-rule
-;	'(extract-bindings-from-pattern (quote 'name))
-;	'(list name))
 (push-base-rule
 	'((fm ((const extract-bindings-from-pattern)
 				 . (fm ((fm ((const quote) . (fm ((var name) . (fm ()))))) . (fm ())))))
 		(list name)))
-;(push-base-rule
-;	'((fm ((const evaluate)
-;				 . (fm ((var rules) . (fm ((fm ((const quote) . (fm ((var val) . (fm ()))))) . (fm ())))))))
-;		val))
-
-;(define-base-rule
-;	'(extract-bindings-from-pattern 'ptn)
-;	'(car car)) ; Invalid pattern format.
-;
-;(define-base-rule
-;	'(extract-bindings-from-pattern (fm 'hd . 'tl))
-;	'(append (extract-bindings-from-pattern hd) (extract-bindings-from-pattern tl)))
-;
-;(define-base-rule
-;	'(extract-bindings-from-pattern (const 'sym))
-;	''())
-;
-;(define-base-rule
-;	'(extract-bindings-from-pattern (var 'name))
-;	'(list name))
 
 (define-base-operator 'generate-binding-code-from-bindings)
 (define-base-rule
-	'(generate-binding-code-from-bindings ('bdng . 'bdng-tl))
+	'(generate-binding-code-from-bindings ('bdng . 'bdng-tl) 'lexical-rules)
 	'(list 'cons
 				 (list 'list (list 'list ''const (list 'quote bdng)) bdng)
-				 (generate-binding-code-from-bindings bdng-tl)))
+				 (generate-binding-code-from-bindings bdng-tl lexical-rules)))
 (define-base-rule
-	'(generate-binding-code-from-bindings ())
-	''rules)
+	'(generate-binding-code-from-bindings () 'lexical-rules)
+	'(list 'quote lexical-rules))
 
 (define-base-operator 'generate-binding-code-from-pattern)
 (define-base-rule
-	'(generate-binding-code-from-pattern 'ptn)
-	'(generate-binding-code-from-bindings (extract-bindings-from-pattern ptn)))
+	'(generate-binding-code-from-pattern 'ptn 'lexical-rules)
+	'(generate-binding-code-from-bindings (extract-bindings-from-pattern ptn) lexical-rules))
 
 (define-base-operator 'wrap-rule-with-evaluate)
 (define-base-rule
-	'(wrap-rule-with-evaluate 'ptn 'expr)
+	'(wrap-rule-with-evaluate 'ptn 'expr 'lexical-rules)
 	'(list
 		 (list 'evaluate ''rules ptn)
-		 (list 'evaluate (generate-binding-code-from-pattern ptn) (list 'quote expr))))
+		 (list 'evaluate (generate-binding-code-from-pattern ptn lexical-rules) (list 'quote expr))))
 
 (define-base-operator 'compile-rule-pattern-expression-pair)
 (define-base-rule
@@ -367,17 +340,14 @@
 (define (evaluate-expression fm)
 	(evaluate-builtin base-rules `(evaluate base-rules (quote ,fm))))
 
-;(evaluate-expression
-;	'(rule (foo 'x) x))
-
 (evaluate-expression
 	'(scope
 		 (define (rule (foo 'x) x))
-		 (foo 1)))
+		 (define (rule (bar 'y) (foo y)))
+		 (bar 2)))
 
 ;(evaluate-expression
 ;	'(scope
-;		 (define (rule x 2))
 ;		 (define (rule double 'double))
 ;		 (define (rule (double 'y) (+ y y)))
 ;		 (double 3)))
