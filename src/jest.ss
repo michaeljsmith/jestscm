@@ -250,6 +250,7 @@
   '(evaluate 'rules ('head . 'tail))
   '(evaluate-builtin rules ('evaluate-list rules (cons head tail))))
 
+(define-base-operator 'rule)
 (define-base-rule
 	'(evaluate 'rules (rule 'ptn 'expr))
 	'(compile-rule-pattern-expression-pair (wrap-rule-with-evaluate ptn expr rules)))
@@ -262,10 +263,34 @@
 															 . (fm ()))))) . (fm ())))))))
 		val))
 
+(define-base-operator 'evaluate2-list)
+(define-base-rule
+	'(evaluate2-list 'rules ('hd . 'tl))
+	'(cons (list 'quote ('evaluate2 rules hd)) ('evaluate2-list rules tl)))
+
+(define-base-rule
+	'(evaluate2-list 'rules ())
+	''())
+
+(define-base-operator 'deliberately-nonexistent)
 (define-base-operator 'evaluate2)
 (define-base-rule
 	'(evaluate2 'rules 'fm)
-	'(evaluate-builtin rules (list 'evaluate (list 'quote rules) (list 'quote fm))))
+	'(evaluate-builtin
+		 rules
+		 (list
+			 'evaluate
+			 (list 'quote rules)
+			 (list 'quote fm))))
+
+(define-base-rule
+	'(evaluate2 'rules ('hd . 'tl))
+	'(evaluate-builtin
+		 rules
+		 (list
+			 'evaluate
+			 (list 'quote rules)
+			 (list 'quote ('evaluate2-list rules (cons hd tl))))))
 
 (define-base-operator 'second)
 (define-base-rule
@@ -342,9 +367,15 @@
 
 (evaluate-expression
 	'(scope
-		 (define (rule (foo 'x) x))
-		 (define (rule (bar 'y) (foo y)))
-		 (bar 2)))
+		 (define (rule foo 'foo))
+		 (define (rule (foo 's) s))
+		 (foo (deliberately-nonexistent 1))))
+
+;(evaluate-expression
+;	'(scope
+;		 (define (rule (foo 'x) x))
+;		 (define (rule (bar 'y) (foo y)))
+;		 (bar 2)))
 
 ;(evaluate-expression
 ;	'(scope
