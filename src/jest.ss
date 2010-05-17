@@ -73,10 +73,7 @@
 								 (if (null? to-mrg)
 									 (list #t bdngs)
 									 (let*
-										 ((bdng (begin
-															(printf (string-append* "" (make-list dbg-indnt " ")))
-															(printf "merging: ~a into ~a~n" to-mrg bdngs)
-															(car to-mrg)))
+										 ((bdng (car to-mrg))
 											(name (car bdng))
 											(value (cadr bdng))
 											(existing (assv name bdngs))
@@ -90,7 +87,6 @@
 			(else
 			(match-ptn ptn fm))))
 	  (define (match-ptn ptn fm)
-			;(printf "match-ptn~n  ptn=~a~n  fm=~a~n" ptn fm)
 			(let ((match-ptn-rslt
 							(let ((ptn-tp (car ptn))
 										(ptn-val (cadr ptn)))
@@ -99,16 +95,6 @@
 									((eqv? ptn-tp 'var) (match-var ptn-val fm))
 									((eqv? ptn-tp 'fm) (match-fm ptn-val fm))
 									(else (car car))))))
-				(when (car match-ptn-rslt)
-					(begin
-						(printf (string-append* "" (make-list dbg-indnt " ")))
-						(printf "match scs:~n")
-						(printf (string-append* "" (make-list dbg-indnt " ")))
-						(printf "ptn=~a~n" ptn)
-						(printf (string-append* "" (make-list dbg-indnt " ")))
-						(printf "fm= ~a~n" fm)
-						(printf (string-append* "" (make-list dbg-indnt " ")))
-						(printf "bdngs = ~a~n~n" (cdr match-ptn-rslt))))
 				match-ptn-rslt))
 		(define (bind-and-evaluate bdngs fm)
 			(let ((new-rules
@@ -124,15 +110,7 @@
 				(evaluate-using-rules fallback new-rules fm)))
 	  (cond
 		((null? rules)
-		 (begin
-			 (printf (string-append* "" (make-list dbg-indnt " ")))
-		   (printf "rules exhausted for expr ~a~n" fm)
-		   (let ((rslt (apply fallback (list fm))))
-				 (printf (string-append* "" (make-list dbg-indnt " ")))
-				 (printf "  fallback rslt (~a):~n" fm)
-				 (printf (string-append* "" (make-list dbg-indnt " ")))
-				 (printf "      ~a~n" rslt)
-				 rslt)))
+		 (apply fallback (list fm)))
 		(else (let* ((rule (car rules))
 					 (rule-ptn (car rule))
 					 (rule-expr (cadr rule))
@@ -141,19 +119,12 @@
 				(if match-scs
 				  (bind-and-evaluate (cadr match-rslt) rule-expr)
 				  (recurse (cdr rules))))))))
-	(printf (string-append* "" (make-list dbg-indnt " ")))
-	(printf "{~n")
-	(printf (string-append* "" (make-list dbg-indnt " ")))
-	(printf "** Evaluating: ~a~n" in-fm)
-	(set! dbg-indnt (+ dbg-indnt 2))
   (let
 		((eval-rslt
 			 (cond
 				 ((not (list? in-fm)) (resolve in-fm))
 				 ((eqv? 'quote (car in-fm))
 					(begin
-						(printf (string-append* "" (make-list dbg-indnt " ")))
-						(printf "quote (~a) = ~a~n" in-fm (cadr in-fm))
 						(cadr in-fm)))
 				 (else
 					 (begin
@@ -163,14 +134,7 @@
 									 null
 									 (cons (evaluate-using-rules fallback in-rules (car subfms))
 												 (eval-subfms (cdr subfms)))))))
-							 (printf (string-append* "" (make-list dbg-indnt " ")))
-							 (printf "Evaluated subfms: ~a~n" subfms)
 							 (resolve subfms)))))))
-		(set! dbg-indnt (- dbg-indnt 2))
-		(printf (string-append* "" (make-list dbg-indnt " ")))
-		(printf "-- Evaluated (~a): ~a~n" in-fm eval-rslt)
-		(printf (string-append* "" (make-list dbg-indnt " ")))
-		(printf "}~n~n")
 		eval-rslt))
 
 (define base-rules '())
@@ -188,8 +152,6 @@
 									((list? ls) (cons `(quote ,(car ls)) (quote-list (cdr ls))))
 									(else ls))))
 						fm)))
-		(printf (string-append* "" (make-list dbg-indnt " ")))
-	  (printf "scheme eval ~a~n" quoted-list)
 	  (eval quoted-list eval-ns)))
   (evaluate-using-rules scheme-evaluate rules fm))
 (define (push-base-rule rl) (set! base-rules (cons rl base-rules)))
@@ -218,7 +180,6 @@
 		  (evaluate-builtin
 			base-rules
 			`(compile-rule (quote ,op) (quote (quote ,op))))))
-	(printf "compile-operator returned ~a~n" rslt)
 	rslt))
 
 (define (define-base-operator op)
@@ -243,54 +204,38 @@
 
 (define-base-operator 'evaluate)
 (define-base-rule
-  '(evaluate 'rules 'fm)
+	'(evaluate 'rules 'fm)
+	'(second
+		 (printf "evaluate:~n  rules=~a~n  fm=~a~n~n" rules fm)
+		 (evaluate-impl rules fm)))
+
+(define-base-operator 'evaluate-impl)
+(define-base-rule
+  '(evaluate-impl 'rules 'fm)
   '(evaluate-builtin rules fm))
 
 (define-base-rule
-  '(evaluate 'rules ('head . 'tail))
+  '(evaluate-impl 'rules ('head . 'tail))
   '(evaluate-builtin rules ('evaluate-list rules (cons head tail))))
 
-(define-base-operator 'rule)
 (define-base-rule
-	'(evaluate 'rules (rule 'ptn 'expr))
+	'(evaluate-impl 'rules (rule 'ptn 'expr))
 	'(compile-rule-pattern-expression-pair (wrap-rule-with-evaluate ptn expr rules)))
 
 (push-base-rule
-	'((fm ((const evaluate)
+	'((fm ((const evaluate-impl)
 				 . (fm ((var rules)
 						. (fm ((fm ((const quote)
 												. (fm ((var val)
 															 . (fm ()))))) . (fm ())))))))
 		val))
 
-(define-base-operator 'evaluate2-list)
-(define-base-rule
-	'(evaluate2-list 'rules ('hd . 'tl))
-	'(cons (list 'quote ('evaluate2 rules hd)) ('evaluate2-list rules tl)))
-
-(define-base-rule
-	'(evaluate2-list 'rules ())
-	''())
-
-(define-base-operator 'deliberately-nonexistent)
 (define-base-operator 'evaluate2)
 (define-base-rule
 	'(evaluate2 'rules 'fm)
-	'(evaluate-builtin
-		 rules
-		 (list
-			 'evaluate
-			 (list 'quote rules)
-			 (list 'quote fm))))
-
-(define-base-rule
-	'(evaluate2 'rules ('hd . 'tl))
-	'(evaluate-builtin
-		 rules
-		 (list
-			 'evaluate
-			 (list 'quote rules)
-			 (list 'quote ('evaluate2-list rules (cons hd tl))))))
+	'(second
+		 (printf "evaluate2: ~a~n~n" (list 'evaluate (list 'quote rules) (list 'quote fm)))
+		 (evaluate-builtin rules (list 'evaluate (list 'quote rules) (list 'quote fm)))))
 
 (define-base-operator 'second)
 (define-base-rule
@@ -308,7 +253,9 @@
 
 (define-base-rule
   '(evaluate-scope-clauses 'rules ('clause))
-  '(evaluate2 rules clause))
+  '(second
+		 (printf "Evaluating last clause: ~a~n~n" clause)
+		 (evaluate2 rules clause)))
 
 (define-base-rule
   '(evaluate-scope-clauses 'rules ((define 'rule) . 'tail))
@@ -316,7 +263,7 @@
 
 (define-base-operator 'scope)
 (define-base-rule
-  '(evaluate 'rules (scope . 'clauses))
+  '(evaluate-impl 'rules (scope . 'clauses))
   '(evaluate-scope-clauses rules clauses))
 
 (define-base-operator 'extract-bindings-from-pattern)
@@ -355,7 +302,7 @@
 	'(wrap-rule-with-evaluate 'ptn 'expr 'lexical-rules)
 	'(list
 		 (list 'evaluate ''rules ptn)
-		 (list 'evaluate (generate-binding-code-from-pattern ptn lexical-rules) (list 'quote expr))))
+		 (list 'evaluate2 (generate-binding-code-from-pattern ptn lexical-rules) (list 'quote expr))))
 
 (define-base-operator 'compile-rule-pattern-expression-pair)
 (define-base-rule
@@ -365,17 +312,17 @@
 (define (evaluate-expression fm)
 	(evaluate-builtin base-rules `(evaluate base-rules (quote ,fm))))
 
-(evaluate-expression
-	'(scope
-		 (define (rule foo 'foo))
-		 (define (rule (foo 's) s))
-		 (foo (deliberately-nonexistent 1))))
-
 ;(evaluate-expression
 ;	'(scope
-;		 (define (rule (foo 'x) x))
-;		 (define (rule (bar 'y) (foo y)))
-;		 (bar 2)))
+;		 (define (rule foo 'foo))
+;		 (define (rule (foo 's) s))
+;		 (foo (deliberately-nonexistent 1))))
+
+(evaluate-expression
+	'(scope
+		 (define (rule (foo 'x) x))
+		 (define (rule (bar 'y) (foo y)))
+		 (bar 2)))
 
 ;(evaluate-expression
 ;	'(scope
