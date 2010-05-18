@@ -119,6 +119,7 @@
 				(if match-scs
 				  (bind-and-evaluate (cadr match-rslt) rule-expr)
 				  (recurse (cdr rules))))))))
+	(printf "in-fm: ~a~nrules: ~a~n~n" in-fm in-rules)
   (let
 		((eval-rslt
 			 (cond
@@ -219,8 +220,9 @@
   '(evaluate-builtin rules ('evaluate-list rules (cons head tail))))
 
 (define-base-rule
-	'(evaluate-impl 'rules (rule 'ptn 'expr))
-	'(compile-rule-pattern-expression-pair (wrap-rule-with-evaluate ptn expr rules)))
+	'(evaluate-impl 'rules ('scope-sym rule 'ptn 'expr)) ; Could this be a rule?
+	'(compile-rule-pattern-expression-pair
+		 (wrap-rule-with-evaluate ptn expr (list (compile-rule ''expr (list 'cons scope-sym 'expr))))))
 
 (push-base-rule
 	'((fm ((const evaluate-impl)
@@ -244,27 +246,39 @@
 
 (define-base-operator 'evaluate-scope-clauses)
 (define-base-rule
-  '(evaluate-scope-clauses 'rules ('head . 'tail))
-  '(second (evaluate2 rules head) (evaluate-scope-clauses rules tail)))
+  '(evaluate-scope-clauses 'scope-sym 'rules defs ('head . 'tail))
+  '(second (evaluate2 rules head) (evaluate-scope-clauses defs scope-sym rules tail)))
 
 (define-base-rule
-  '(evaluate-scope-clauses 'rules ())
+  '(evaluate-scope-clauses 'scope-sym 'rules defs ())
   ''())
 
 (define-base-rule
-  '(evaluate-scope-clauses 'rules ('clause))
+  '(evaluate-scope-clauses 'scope-sym 'rules defs ('clause))
   '(second
-		 (printf "Evaluating last clause: ~a~n~n" clause)
-		 (evaluate2 rules clause)))
+		 (printf "Evaluating last clause: ~a~n~n" clause) ; TODO: Modify this to handle redirected rules.
+		 (evaluate2
+			 (cons
+				 (compile-rule
+					 (list 'evaluate-impl ''rules (cons scope-sym ''expr))
+					 (list 'evaluate2 (list 'quote rules) 'expr))
+				 defs)
+			 clause)))
+
+
+;(list
+;		 (list 'evaluate-impl ''rules ptn)
+;		 (list 'evaluate2 (generate-binding-code-from-pattern ptn lexical-rules) (list 'quote expr)))
 
 (define-base-rule
-  '(evaluate-scope-clauses 'rules ((define 'rule) . 'tail))
-  '(evaluate-scope-clauses (cons (evaluate2 rules rule) rules) tail))
+  '(evaluate-scope-clauses 'scope-sym 'rules defs ((define 'rule) . 'tail))
+  '(evaluate-scope-clauses scope-sym rules (cons (evaluate2 rules (cons scope-sym rule)) defs) tail))
 
+(define-base-operator 'gensym)
 (define-base-operator 'scope)
 (define-base-rule
   '(evaluate-impl 'rules (scope . 'clauses))
-  '(evaluate-scope-clauses rules clauses))
+  '(evaluate-scope-clauses (gensym "scope") rules () clauses))
 
 (define-base-operator 'extract-bindings-from-pattern)
 (define-base-rule
@@ -312,11 +326,11 @@
 (define (evaluate-expression fm)
 	(evaluate-builtin base-rules `(evaluate base-rules (quote ,fm))))
 
-;(evaluate-expression
-;	'(scope
-;		 (define (rule foo 'foo))
-;		 (define (rule (foo 's) s))
-;		 (foo 1)))
+(evaluate-expression
+	'(scope
+		 (define (rule foo 'foo))
+		 (define (rule (foo 's) s))
+		 (foo 1)))
 
 ;(evaluate-expression
 ;	'(scope
@@ -330,17 +344,17 @@
 ;		 (define (rule (double 'y) (+ y y)))
 ;		 (double 3)))
 
-(evaluate-expression
-	'(scope
-		 (define (rule foo 'foo))
-		 (define
-			 (rule (foo 'x)
-						 (scope
-							 (define (rule bar 'bar))
-							 (define
-								 (rule (bar 'y) (+ x y)))
-							 (bar 3))))
-		 (foo 4)))
+;(evaluate-expression
+;	'(scope
+;		 (define (rule foo 'foo))
+;		 (define
+;			 (rule (foo 'x)
+;						 (scope
+;							 (define (rule bar 'bar))
+;							 (define
+;								 (rule (bar 'y) (+ x y)))
+;							 (bar 3))))
+;		 (foo 4)))
 
 ;(evaluate-expression
 ;	'(scope
