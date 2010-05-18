@@ -301,8 +301,8 @@
 (define-base-rule
 	'(wrap-rule-with-evaluate 'ptn 'expr 'lexical-rules)
 	'(list
-		 (list 'evaluate ''rules ptn)
-		 (list 'evaluate (generate-binding-code-from-pattern ptn lexical-rules) (list 'quote expr))))
+		 (list 'evaluate-impl ''rules ptn)
+		 (list 'evaluate2 (generate-binding-code-from-pattern ptn lexical-rules) (list 'quote expr))))
 
 (define-base-operator 'compile-rule-pattern-expression-pair)
 (define-base-rule
@@ -344,8 +344,8 @@
 
 (evaluate-expression
 	'(scope
+		 (define (rule bar 'bar))
+		 (define (rule (bar 'y) (+ 1 y)))
 		 (define (rule foo 'foo))
 		 (define (rule (foo 'x) (bar x)))
-		 (define (rule bar 'bar))
-		 (define (rule (bar 'x) (+ 1 x)))
 		 (foo 2)))
