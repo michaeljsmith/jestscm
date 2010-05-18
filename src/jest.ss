@@ -330,22 +330,22 @@
 ;		 (define (rule (double 'y) (+ y y)))
 ;		 (double 3)))
 
-;(evaluate-expression
-;	'(scope
-;		 (define (rule foo 'foo))
-;		 (define
-;			 (rule (foo 'x)
-;						 (scope
-;							 (define (rule bar 'bar))
-;							 (define
-;								 (rule (bar 'y) (+ x y)))
-;							 (bar 3))))
-;		 (foo 4)))
-
 (evaluate-expression
 	'(scope
-		 (define (rule bar 'bar))
-		 (define (rule (bar 'y) (+ 1 y)))
 		 (define (rule foo 'foo))
-		 (define (rule (foo 'x) (bar x)))
-		 (foo 2)))
+		 (define
+			 (rule (foo 'x)
+						 (scope
+							 (define (rule bar 'bar))
+							 (define
+								 (rule (bar 'y) (+ x y)))
+							 (bar 3))))
+		 (foo 4)))
+
+;(evaluate-expression
+;	'(scope
+;		 (define (rule bar 'bar))
+;		 (define (rule (bar 'y) (+ 1 y)))
+;		 (define (rule foo 'foo))
+;		 (define (rule (foo 'x) (bar x)))
+;		 (foo 2)))
