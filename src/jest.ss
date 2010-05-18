@@ -286,7 +286,7 @@
 (define-base-rule
 	'(generate-binding-code-from-bindings ('bdng . 'bdng-tl) 'lexical-rules)
 	'(list 'cons
-				 (list 'list (list 'list ''const (list 'quote bdng)) bdng)
+				 (list 'list (list 'list ''const (list 'quote bdng)) (list 'evaluate 'rules bdng))
 				 (generate-binding-code-from-bindings bdng-tl lexical-rules)))
 (define-base-rule
 	'(generate-binding-code-from-bindings () 'lexical-rules)
@@ -302,7 +302,7 @@
 	'(wrap-rule-with-evaluate 'ptn 'expr 'lexical-rules)
 	'(list
 		 (list 'evaluate ''rules ptn)
-		 (list 'evaluate2 (generate-binding-code-from-pattern ptn lexical-rules) (list 'quote expr))))
+		 (list 'evaluate (generate-binding-code-from-pattern ptn lexical-rules) (list 'quote expr))))
 
 (define-base-operator 'compile-rule-pattern-expression-pair)
 (define-base-rule
@@ -316,13 +316,13 @@
 ;	'(scope
 ;		 (define (rule foo 'foo))
 ;		 (define (rule (foo 's) s))
-;		 (foo (deliberately-nonexistent 1))))
+;		 (foo 1)))
 
-(evaluate-expression
-	'(scope
-		 (define (rule (foo 'x) x))
-		 (define (rule (bar 'y) (foo y)))
-		 (bar 2)))
+;(evaluate-expression
+;	'(scope
+;		 (define (rule (foo 'x) x))
+;		 (define (rule (bar 'y) (foo y)))
+;		 (bar 2)))
 
 ;(evaluate-expression
 ;	'(scope
@@ -341,3 +341,11 @@
 ;								 (rule (bar 'y) (+ x y)))
 ;							 (bar 3))))
 ;		 (foo 4)))
+
+(evaluate-expression
+	'(scope
+		 (define (rule foo 'foo))
+		 (define (rule (foo 'x) (bar x)))
+		 (define (rule bar 'bar))
+		 (define (rule (bar 'x) (+ 1 x)))
+		 (foo 2)))
