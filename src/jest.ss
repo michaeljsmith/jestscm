@@ -222,7 +222,7 @@
 (define-base-rule
 	'(evaluate-impl 'rules ('scope-sym rule 'ptn 'expr)) ; Could this be a rule?
 	'(compile-rule-pattern-expression-pair
-		 (wrap-rule-with-evaluate ptn expr (list (compile-rule ''expr (list 'cons scope-sym 'expr))))))
+		 (wrap-rule-with-evaluate ptn expr (list (compile-rule ''expr (list scope-sym 'expr))))))
 
 (push-base-rule
 	'((fm ((const evaluate-impl)
@@ -246,23 +246,23 @@
 
 (define-base-operator 'evaluate-scope-clauses)
 (define-base-rule
-  '(evaluate-scope-clauses 'scope-sym 'rules 'defs ('head . 'tail))
-  '(second (evaluate2 rules head) (evaluate-scope-clauses defs scope-sym rules tail)))
+  '(evaluate-scope-clauses 'scope-sym 'rules ('head . 'tail))
+  '(second (evaluate2 rules head) (evaluate-scope-clauses scope-sym rules tail)))
 
 (define-base-rule
-  '(evaluate-scope-clauses 'scope-sym 'rules 'defs ())
+  '(evaluate-scope-clauses 'scope-sym 'rules ())
   ''())
 
 (define-base-rule
-  '(evaluate-scope-clauses 'scope-sym 'rules 'defs ('clause))
+  '(evaluate-scope-clauses 'scope-sym 'rules ('clause))
   '(second
-		 (printf "Evaluating last clause: ~a~n~n" clause) ; TODO: Modify this to handle redirected rules.
+		 (printf "Evaluating last clause: ~a~n  rules = ~a~n~n" clause rules)
 		 (evaluate2
 			 (cons
 				 (compile-rule
-					 (list 'evaluate-impl ''rules (cons scope-sym ''expr))
-					 (list 'evaluate2 (list 'quote rules) 'expr))
-				 defs)
+					 (cons scope-sym ''expr)
+					 (list 'evaluate-builtin (list 'quote rules) 'expr))
+				 rules)
 			 clause)))
 
 
@@ -271,14 +271,14 @@
 ;		 (list 'evaluate2 (generate-binding-code-from-pattern ptn lexical-rules) (list 'quote expr)))
 
 (define-base-rule
-  '(evaluate-scope-clauses 'scope-sym 'rules 'defs ((define 'rule) . 'tail))
-  '(evaluate-scope-clauses scope-sym rules (cons (evaluate2 rules (cons scope-sym rule)) defs) tail))
+  '(evaluate-scope-clauses 'scope-sym 'rules ((define 'rule) . 'tail))
+  '(evaluate-scope-clauses scope-sym (cons (evaluate2 rules (cons scope-sym rule)) rules) tail))
 
 (define-base-operator 'gensym)
 (define-base-operator 'scope)
 (define-base-rule
   '(evaluate-impl 'rules (scope . 'clauses))
-  '(evaluate-scope-clauses (gensym "scope") rules '() clauses))
+  '(evaluate-scope-clauses (gensym "scope") rules clauses))
 
 (define-base-operator 'extract-bindings-from-pattern)
 (define-base-rule
@@ -314,9 +314,12 @@
 (define-base-operator 'wrap-rule-with-evaluate)
 (define-base-rule
 	'(wrap-rule-with-evaluate 'ptn 'expr 'lexical-rules)
-	'(list
-		 (list 'evaluate-impl ''rules ptn)
-		 (list 'evaluate2 (generate-binding-code-from-pattern ptn lexical-rules) (list 'quote expr))))
+	'(second
+		 (printf "generate-binding-code-from-pattern returned: ~a~n  pattern = ~a~n~n"
+						 (generate-binding-code-from-pattern ptn lexical-rules) ptn)
+		 (list
+			 (list 'evaluate-impl ''rules ptn)
+			 (list 'evaluate2 (generate-binding-code-from-pattern ptn lexical-rules) (list 'quote expr)))))
 
 (define-base-operator 'compile-rule-pattern-expression-pair)
 (define-base-rule
