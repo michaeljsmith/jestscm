@@ -220,9 +220,9 @@
   '(evaluate-builtin rules ('evaluate-list rules (cons head tail))))
 
 (define-base-rule
-	'(evaluate-impl 'rules ('scope-sym rule 'ptn 'expr)) ; Could this be a rule?
+	'(evaluate-impl 'rules (rule 'ptn 'expr)) ; Could this be a rule?
 	'(compile-rule-pattern-expression-pair
-		 (wrap-rule-with-evaluate scope-sym ptn expr (list (compile-rule ''expr (list (list 'quote scope-sym) 'expr))))))
+		 (wrap-rule-with-evaluate ptn expr)))
 
 (push-base-rule
 	'((fm ((const evaluate-impl)
@@ -257,15 +257,7 @@
   '(evaluate-scope-clauses 'scope-sym 'rules ('clause))
   '(second
 		 (printf "Evaluating last clause: ~a~n  rules = ~a~n~n" clause rules)
-		 (evaluate2
-			 (cons
-				 (compile-rule
-					 scope-sym
-					 (compile-rule
-						 (cons scope-sym ''expr)
-						 (list 'evaluate-builtin (list 'quote rules) 'expr)))
-				 rules)
-			 clause)))
+		 (evaluate2 rules clause)))
 
 
 ;(list
@@ -274,7 +266,7 @@
 
 (define-base-rule
   '(evaluate-scope-clauses 'scope-sym 'rules ((define 'rule) . 'tail))
-  '(evaluate-scope-clauses scope-sym (cons (evaluate2 rules (cons scope-sym rule)) rules) tail))
+  '(evaluate-scope-clauses scope-sym (cons (evaluate2 rules rule) rules) tail))
 
 (define-base-operator 'gensym)
 (define-base-operator 'scope)
@@ -300,30 +292,39 @@
 
 (define-base-operator 'generate-binding-code-from-bindings)
 (define-base-rule
-	'(generate-binding-code-from-bindings ('bdng . 'bdng-tl) 'lexical-rules)
+	'(generate-binding-code-from-bindings ('bdng . 'bdng-tl) 'generate-lexical-rules)
 	'(list 'cons
 				 (list 'list (list 'list ''const (list 'quote bdng)) (list 'evaluate2 'rules bdng))
-				 (generate-binding-code-from-bindings bdng-tl lexical-rules)))
+				 (generate-binding-code-from-bindings bdng-tl generate-lexical-rules)))
 (define-base-rule
-	'(generate-binding-code-from-bindings () 'lexical-rules)
-	'(list 'quote lexical-rules))
+	'(generate-binding-code-from-bindings () 'generate-lexical-rules)
+	'generate-lexical-rules)
 
 (define-base-operator 'generate-binding-code-from-pattern)
 (define-base-rule
-	'(generate-binding-code-from-pattern 'ptn 'lexical-rules)
-	'(generate-binding-code-from-bindings (extract-bindings-from-pattern ptn) lexical-rules))
+	'(generate-binding-code-from-pattern 'ptn 'generate-lexical-rules)
+	'(generate-binding-code-from-bindings (extract-bindings-from-pattern ptn) generate-lexical-rules))
 
 (define-base-operator 'wrap-rule-with-evaluate)
 (define-base-rule
-	'(wrap-rule-with-evaluate 'scope-sym 'ptn 'expr 'lexical-rules)
+	'(wrap-rule-with-evaluate 'ptn 'expr)
 	'(list
-			 (list 'evaluate-impl ''rules ptn)
-			 (list
-				 'evaluate2
-				 (list 'cons
-							 (list 'list (list 'list ''const (list 'quote scope-sym)) (list 'evaluate2 'rules scope-sym))
-							 (generate-binding-code-from-pattern ptn lexical-rules))
-				 (list 'quote expr))))
+		 (list 'evaluate-impl ''rules ptn)
+		 (list
+			 'evaluate2
+			 (generate-binding-code-from-pattern
+				 ptn
+				 (list
+					 'cons
+					 (list
+						 'compile-rule
+						 '''expr
+						 (list 'list
+									 ''evaluate2
+									 'rules
+									 ''expr))
+					 (list 'quote rules)))
+			 (list 'quote expr))))
 
 (define-base-operator 'compile-rule-pattern-expression-pair)
 (define-base-rule
