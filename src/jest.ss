@@ -314,16 +314,7 @@
 			 'evaluate2
 			 (generate-binding-code-from-pattern
 				 ptn
-				 (list
-					 'cons
-					 (list
-						 'compile-rule
-						 '''expr
-						 (list 'list
-									 ''evaluate2
-									 'rules
-									 ''expr))
-					 (list 'quote rules)))
+				 'rules)
 			 (list 'quote expr))))
 
 (define-base-operator 'compile-rule-pattern-expression-pair)
@@ -334,11 +325,11 @@
 (define (evaluate-expression fm)
 	(evaluate-builtin base-rules `(evaluate base-rules (quote ,fm))))
 
-(evaluate-expression
-	'(scope
-		 (define (rule foo 'foo))
-		 (define (rule (foo 's) s))
-		 (foo 1)))
+;(evaluate-expression
+;	'(scope
+;		 (define (rule foo 'foo))
+;		 (define (rule (foo 's) s))
+;		 (foo 1)))
 
 ;(evaluate-expression
 ;	'(scope
@@ -364,10 +355,10 @@
 ;							 (bar 3))))
 ;		 (foo 4)))
 
-;(evaluate-expression
-;	'(scope
-;		 (define (rule bar 'bar))
-;		 (define (rule (bar 'y) (+ 1 y)))
-;		 (define (rule foo 'foo))
-;		 (define (rule (foo 'x) (bar x)))
-;		 (foo 2)))
+(evaluate-expression
+	'(scope
+		 (define (rule bar 'bar))
+		 (define (rule (bar 'y) (+ 1 x)))
+		 (define (rule foo 'foo))
+		 (define (rule (foo 'x) (bar x)))
+		 (foo 2)))
