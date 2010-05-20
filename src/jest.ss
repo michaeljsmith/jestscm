@@ -119,7 +119,6 @@
 				(if match-scs
 				  (bind-and-evaluate (cadr match-rslt) rule-expr)
 				  (recurse (cdr rules))))))))
-	(printf "in-fm: ~a~nrules: ~a~n~n" in-fm in-rules)
   (let
 		((eval-rslt
 			 (cond
@@ -235,9 +234,7 @@
 (define-base-operator 'evaluate2)
 (define-base-rule
 	'(evaluate2 'rules 'fm)
-	'(second
-		 (printf "evaluate2: ~a~n~n" (list 'evaluate (list 'quote rules) (list 'quote fm)))
-		 (evaluate-builtin rules (list 'evaluate (list 'quote rules) (list 'quote fm)))))
+	'(evaluate-builtin rules (list 'evaluate (list 'quote rules) (list 'quote fm))))
 
 (define-base-operator 'second)
 (define-base-rule
@@ -257,9 +254,7 @@
 
 (define-base-rule
   '(evaluate-scope-clauses 'scope-sym 'rules ('clause))
-  '(second
-		 (printf "Evaluating last clause: ~a~n  rules = ~a~n~n" clause rules)
-		 (evaluate2 (cons (list (list 'const scope-sym) (list 'quote rules)) rules) clause)))
+  '(evaluate2 (cons (list (list 'const scope-sym) (list 'quote rules)) rules) clause))
 
 ;(list
 ;		 (list 'evaluate-impl ''rules ptn)
@@ -345,23 +340,23 @@
 ;		 (define (rule (bar 'y) (foo y)))
 ;		 (bar 2)))
 
-;(evaluate-expression
-;	'(scope
-;		 (define (rule double 'double))
-;		 (define (rule (double 'y) (+ y y)))
-;		 (double 3)))
-
 (evaluate-expression
 	'(scope
-		 (define (rule foo 'foo))
-		 (define
-			 (rule (foo 'x)
-						 (scope
-							 (define (rule bar 'bar))
-							 (define
-								 (rule (bar 'y) (+ x y)))
-							 (bar 3))))
-		 (foo 4)))
+		 (define (rule double 'double))
+		 (define (rule (double 'y) (+ y y)))
+		 (double 3)))
+
+;(evaluate-expression
+;	'(scope
+;		 (define (rule foo 'foo))
+;		 (define
+;			 (rule (foo 'x)
+;						 (scope
+;							 (define (rule bar 'bar))
+;							 (define
+;								 (rule (bar 'y) (+ x y)))
+;							 (bar 3))))
+;		 (foo 4)))
 
 ;(evaluate-expression
 ;	'(scope
