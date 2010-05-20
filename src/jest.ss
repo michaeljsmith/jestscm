@@ -119,6 +119,7 @@
 				(if match-scs
 				  (bind-and-evaluate (cadr match-rslt) rule-expr)
 				  (recurse (cdr rules))))))))
+	(printf "{~nin-fm = ~a~nrules = ~a~n~n" in-fm in-rules)
   (let
 		((eval-rslt
 			 (cond
@@ -135,6 +136,7 @@
 									 (cons (evaluate-using-rules fallback in-rules (car subfms))
 												 (eval-subfms (cdr subfms)))))))
 							 (resolve subfms)))))))
+		(printf "Result of ~a:~n~a~n}~n~n" in-fm eval-rslt)
 		eval-rslt))
 
 (define base-rules '())
@@ -154,7 +156,9 @@
 						fm)))
 	  (eval quoted-list eval-ns)))
   (evaluate-using-rules scheme-evaluate rules fm))
-(define (push-base-rule rl) (set! base-rules (cons rl base-rules)))
+(define (push-base-rule rl)
+	(printf "Pushing rule: ~a~n~n" rl)
+	(set! base-rules (cons rl base-rules)))
 
 (push-base-rule '((const compile-pattern) 'compile-pattern))
 (push-base-rule '((const compile-rule) 'compile-rule))
@@ -162,7 +166,7 @@
 (push-base-rule '((const list) 'list))
 (push-base-rule '((const append) 'append))
 
-(push-base-rule '((fm ((const compile-pattern) . (fm ((var x) . (fm ()))))) (list 'const x)))
+(push-base-rule '((fm ((const compile-pattern) . (fm ((var x) . (fm ()))))) (list 'var x)))
 (push-base-rule '((fm ((const compile-pattern) . (fm ((fm ()) . (fm ()))))) '(fm ())))
 (push-base-rule '((fm ((const compile-pattern) . (fm ((fm ((var hd) . (var tl))) . (fm ())))))
 				  (list 'fm (cons (compile-pattern hd) (compile-pattern tl)))))
@@ -171,7 +175,7 @@
 											 (fm ((fm (
 																 (const quote) .
 																 (fm ((var x).(fm ()))))) . (fm ())))))
-									(list 'var x)))
+									(list 'const x)))
 (push-base-rule '((fm ((const compile-rule) . (fm ((var ptn) . (fm ((var expr) . (fm ())))))))
 				  (list (compile-pattern ptn) expr)))
 
@@ -179,13 +183,15 @@
   (let ((rslt
 		  (evaluate-builtin
 			base-rules
-			`(compile-rule (quote ,op) (quote (quote ,op))))))
+			`(compile-rule (quote (quote ,op)) (quote (quote ,op))))))
 	rslt))
 
 (define (define-base-operator op)
   (push-base-rule (compile-operator op)))
 
 (define (compile-rule ptn expr)
+	(printf "Compiling rule: ptn = ~a expr = ~a~n~n" ptn expr)
+	(printf "                ptn = ~a" (evaluate-builtin base-rules `(compile-rule (quote ,ptn) (quote ,expr))))
   (evaluate-builtin
 		base-rules
 		`(compile-rule (quote ,ptn) (quote ,expr))))
@@ -195,33 +201,39 @@
 
 (define-base-operator 'evaluate-list)
 (define-base-rule
-  '(evaluate-list 'rules ('head . 'tail))
+  '('evaluate-list rules (head . tail))
   '(cons (list 'quote ('evaluate rules head)) ('evaluate-list rules tail)))
 
 (define-base-rule
-  '(evaluate-list 'rules ())
+  '('evaluate-list rules ())
   ''())
 
 (define-base-operator 'evaluate)
 (define-base-rule
-	'(evaluate 'rules 'fm)
+	'('evaluate rules fm)
 	'(second
 		 (printf "evaluate:~n  rules=~a~n  fm=~a~n~n" rules fm)
 		 (evaluate-impl rules fm)))
 
 (define-base-operator 'evaluate-impl)
 (define-base-rule
-  '(evaluate-impl 'rules 'fm)
-  '(evaluate-builtin rules fm))
+  '('evaluate-impl rules fm)
+  '(second
+		 (printf "evaluate-impl fm~n  fm=~a~n  rules=~a~n~n" fm rules)
+		 (evaluate-builtin rules fm)))
 
 (define-base-rule
-  '(evaluate-impl 'rules ('head . 'tail))
-  '(evaluate-builtin rules ('evaluate-list rules (cons head tail))))
+	'('evaluate-impl rules (head . tail))
+	'(second
+		 (printf "evaluate-impl (h . t):~n  head=~a~n  tail=~a~n  rules=~a~n~n" head tail rules)
+		 (evaluate-builtin rules ('evaluate-list rules (cons head tail)))))
 
 (define-base-rule
-	'(evaluate-impl 'rules ('scope-sym rule 'ptn 'expr)) ; Could this be a rule?
-	'(compile-rule-pattern-expression-pair
-		 (wrap-rule-with-evaluate scope-sym ptn expr)))
+	'('evaluate-impl rules (scope-sym 'rule ptn expr)) ; Could this be a rule?
+	'(second
+		 (printf "evaluate-impl rule:~n  ptn=~a~n  expr=~a~n  rules=~a~n~n" ptn expr rules)
+		 (compile-rule-pattern-expression-pair
+			 (wrap-rule-with-evaluate scope-sym ptn expr))))
 
 (push-base-rule
 	'((fm ((const evaluate-impl)
@@ -233,31 +245,31 @@
 
 (define-base-operator 'evaluate2)
 (define-base-rule
-	'(evaluate2 'rules 'fm)
+	'('evaluate2 rules fm)
 	'(evaluate-builtin rules (list 'evaluate (list 'quote rules) (list 'quote fm))))
 
 (define-base-operator 'second)
 (define-base-rule
-   '(second 'x0 'x1)
+   '('second x0 x1)
    'x1)
 
 (define-base-operator 'evaluate-scope-clauses)
 (define-base-rule
-  '(evaluate-scope-clauses 'scope-sym 'rules ('head . 'tail))
+  '('evaluate-scope-clauses scope-sym rules (head . tail))
   '(second
 		 (evaluate2 (cons (list (list 'const scope-sym) (list 'quote rules)) rules) head)
 		 (evaluate-scope-clauses scope-sym rules tail)))
 
 (define-base-rule
-  '(evaluate-scope-clauses 'scope-sym 'rules ())
+  '('evaluate-scope-clauses scope-sym rules ())
   ''())
 
 (define-base-rule
-  '(evaluate-scope-clauses 'scope-sym 'rules ('clause))
+  '('evaluate-scope-clauses scope-sym rules (clause))
   '(evaluate2 (cons (list (list 'const scope-sym) (list 'quote rules)) rules) clause))
 
 (define-base-rule
-  '(evaluate-scope-clauses 'scope-sym 'rules ((define 'rule) . 'tail))
+  '('evaluate-scope-clauses scope-sym rules (('define rule) . tail))
   '(evaluate-scope-clauses
 		 scope-sym
 		 (cons
@@ -270,16 +282,20 @@
 (define-base-operator 'gensym)
 (define-base-operator 'scope)
 (define-base-rule
-  '(evaluate-impl 'rules (scope . 'clauses))
+  '('evaluate-impl rules ('scope . clauses))
   '(evaluate-scope-clauses (gensym "scope") rules clauses))
 
 (define-base-operator 'extract-bindings-from-pattern)
 (define-base-rule
-	'(extract-bindings-from-pattern 'ptn)
+	'('extract-bindings-from-pattern ptn)
+	'(list ptn))
+
+(define-base-rule
+	'('extract-bindings-from-pattern ())
 	''())
 
 (define-base-rule
-	'(extract-bindings-from-pattern ('hd . 'tl))
+	'('extract-bindings-from-pattern (hd . tl))
 	'(append
 		 (extract-bindings-from-pattern hd)
 		 (extract-bindings-from-pattern tl))) ; Might cause duplicates, but shouldn't matter.
@@ -287,28 +303,28 @@
 (push-base-rule
 	'((fm ((const extract-bindings-from-pattern)
 				 . (fm ((fm ((const quote) . (fm ((var name) . (fm ()))))) . (fm ())))))
-		(list name)))
+		'()))
 
 (define-base-operator 'generate-binding-code-from-bindings)
 (define-base-rule
-	'(generate-binding-code-from-bindings ('bdng . 'bdng-tl) 'generate-lexical-rules)
+	'('generate-binding-code-from-bindings (bdng . bdng-tl) generate-lexical-rules)
 	'(list 'cons
 				 (list 'list (list 'list ''const (list 'quote bdng)) (list 'evaluate 'rules bdng))
 				 (generate-binding-code-from-bindings bdng-tl generate-lexical-rules)))
 (define-base-rule
-	'(generate-binding-code-from-bindings () 'generate-lexical-rules)
+	'('generate-binding-code-from-bindings () generate-lexical-rules)
 	'generate-lexical-rules)
 
 (define-base-operator 'generate-binding-code-from-pattern)
 (define-base-rule
-	'(generate-binding-code-from-pattern 'ptn 'generate-lexical-rules)
+	'('generate-binding-code-from-pattern ptn generate-lexical-rules)
 	'(generate-binding-code-from-bindings (extract-bindings-from-pattern ptn) generate-lexical-rules))
 
 (define-base-operator 'wrap-rule-with-evaluate)
 (define-base-rule
-	'(wrap-rule-with-evaluate 'scope-sym 'ptn 'expr)
+	'('wrap-rule-with-evaluate scope-sym ptn expr)
 	'(list
-		 (list 'evaluate-impl ''rules ptn)
+		 (list ''evaluate-impl 'rules ptn)
 		 (list
 			 'evaluate
 			 (generate-binding-code-from-pattern
@@ -318,46 +334,40 @@
 
 (define-base-operator 'compile-rule-pattern-expression-pair)
 (define-base-rule
-	'(compile-rule-pattern-expression-pair ('ptn 'expr))
+	'('compile-rule-pattern-expression-pair (ptn expr))
 	'(compile-rule ptn expr))
 
 (define (evaluate-expression fm)
 	(evaluate-builtin base-rules `(evaluate base-rules (quote ,fm))))
 
-;(evaluate-expression
-;	'(scope
-;		 (define (rule foo 'foo))
-;		 (define (rule (foo 's) s))
-;		 (foo 1)))
+(evaluate-expression
+	'(scope
+		 (define (rule 'foo 'foo))
+		 (define (rule ('foo s) s))
+		 (foo 1)))
 
 ;(evaluate-expression
 ;	'(scope
-;		 (define (rule (foo 'x) x))
-;		 (define (rule (bar 'y) (foo y)))
-;		 (bar 2)))
+;		 (define (rule 'double 'double))
+;		 (define (rule ('double y) (+ y y)))
+;		 (double 3)))
 
 (evaluate-expression
 	'(scope
-		 (define (rule double 'double))
-		 (define (rule (double 'y) (+ y y)))
-		 (double 3)))
+		 (define (rule 'foo 'foo))
+		 (define
+			 (rule ('foo x)
+						 (scope
+							 (define (rule 'bar 'bar))
+							 (define
+								 (rule ('bar y) (+ x y)))
+							 (bar 3))))
+		 (foo 4)))
 
 ;(evaluate-expression
 ;	'(scope
-;		 (define (rule foo 'foo))
-;		 (define
-;			 (rule (foo 'x)
-;						 (scope
-;							 (define (rule bar 'bar))
-;							 (define
-;								 (rule (bar 'y) (+ x y)))
-;							 (bar 3))))
-;		 (foo 4)))
-
-;(evaluate-expression
-;	'(scope
-;		 (define (rule bar 'bar))
-;		 (define (rule (bar 'y) (+ 1 y)))
-;		 (define (rule foo 'foo))
-;		 (define (rule (foo 'x) (bar x)))
+;		 (define (rule 'bar 'bar))
+;		 (define (rule ('bar y) (+ 1 y)))
+;		 (define (rule 'foo 'foo))
+;		 (define (rule ('foo x) (bar x)))
 ;		 (foo 2)))
