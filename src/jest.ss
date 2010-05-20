@@ -222,7 +222,7 @@
 (define-base-rule
 	'(evaluate-impl 'rules ('scope-sym rule 'ptn 'expr)) ; Could this be a rule?
 	'(compile-rule-pattern-expression-pair
-		 (wrap-rule-with-evaluate ptn expr (list (compile-rule ''expr (list scope-sym 'expr))))))
+		 (wrap-rule-with-evaluate scope-sym ptn expr (list (compile-rule ''expr (list (list 'quote scope-sym) 'expr))))))
 
 (push-base-rule
 	'((fm ((const evaluate-impl)
@@ -260,8 +260,10 @@
 		 (evaluate2
 			 (cons
 				 (compile-rule
-					 (cons scope-sym ''expr)
-					 (list 'evaluate-builtin (list 'quote rules) 'expr))
+					 scope-sym
+					 (compile-rule
+						 (cons scope-sym ''expr)
+						 (list 'evaluate-builtin (list 'quote rules) 'expr)))
 				 rules)
 			 clause)))
 
@@ -300,7 +302,7 @@
 (define-base-rule
 	'(generate-binding-code-from-bindings ('bdng . 'bdng-tl) 'lexical-rules)
 	'(list 'cons
-				 (list 'list (list 'list ''const (list 'quote bdng)) (list 'evaluate 'rules bdng))
+				 (list 'list (list 'list ''const (list 'quote bdng)) (list 'evaluate2 'rules bdng))
 				 (generate-binding-code-from-bindings bdng-tl lexical-rules)))
 (define-base-rule
 	'(generate-binding-code-from-bindings () 'lexical-rules)
@@ -313,13 +315,15 @@
 
 (define-base-operator 'wrap-rule-with-evaluate)
 (define-base-rule
-	'(wrap-rule-with-evaluate 'ptn 'expr 'lexical-rules)
-	'(second
-		 (printf "generate-binding-code-from-pattern returned: ~a~n  pattern = ~a~n~n"
-						 (generate-binding-code-from-pattern ptn lexical-rules) ptn)
-		 (list
+	'(wrap-rule-with-evaluate 'scope-sym 'ptn 'expr 'lexical-rules)
+	'(list
 			 (list 'evaluate-impl ''rules ptn)
-			 (list 'evaluate2 (generate-binding-code-from-pattern ptn lexical-rules) (list 'quote expr)))))
+			 (list
+				 'evaluate2
+				 (list 'cons
+							 (list 'list (list 'list ''const (list 'quote scope-sym)) (list 'evaluate2 'rules scope-sym))
+							 (generate-binding-code-from-pattern ptn lexical-rules))
+				 (list 'quote expr))))
 
 (define-base-operator 'compile-rule-pattern-expression-pair)
 (define-base-rule
