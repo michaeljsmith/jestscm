@@ -220,9 +220,9 @@
   '(evaluate-builtin rules ('evaluate-list rules (cons head tail))))
 
 (define-base-rule
-	'(evaluate-impl 'rules (rule 'ptn 'expr)) ; Could this be a rule?
+	'(evaluate-impl 'rules ('scope-sym rule 'ptn 'expr)) ; Could this be a rule?
 	'(compile-rule-pattern-expression-pair
-		 (wrap-rule-with-evaluate ptn expr)))
+		 (wrap-rule-with-evaluate scope-sym ptn expr)))
 
 (push-base-rule
 	'((fm ((const evaluate-impl)
@@ -247,7 +247,9 @@
 (define-base-operator 'evaluate-scope-clauses)
 (define-base-rule
   '(evaluate-scope-clauses 'scope-sym 'rules ('head . 'tail))
-  '(second (evaluate2 rules head) (evaluate-scope-clauses scope-sym rules tail)))
+  '(second
+		 (evaluate2 (cons (list (list 'const scope-sym) (list 'quote rules)) rules) head)
+		 (evaluate-scope-clauses scope-sym rules tail)))
 
 (define-base-rule
   '(evaluate-scope-clauses 'scope-sym 'rules ())
@@ -257,8 +259,7 @@
   '(evaluate-scope-clauses 'scope-sym 'rules ('clause))
   '(second
 		 (printf "Evaluating last clause: ~a~n  rules = ~a~n~n" clause rules)
-		 (evaluate2 rules clause)))
-
+		 (evaluate2 (cons (list (list 'const scope-sym) (list 'quote rules)) rules) clause)))
 
 ;(list
 ;		 (list 'evaluate-impl ''rules ptn)
@@ -266,7 +267,14 @@
 
 (define-base-rule
   '(evaluate-scope-clauses 'scope-sym 'rules ((define 'rule) . 'tail))
-  '(evaluate-scope-clauses scope-sym (cons (evaluate2 rules rule) rules) tail))
+  '(evaluate-scope-clauses
+		 scope-sym
+		 (cons
+			 (evaluate2
+				 rules
+				 (cons scope-sym rule))
+			 rules)
+		 tail))
 
 (define-base-operator 'gensym)
 (define-base-operator 'scope)
@@ -294,7 +302,7 @@
 (define-base-rule
 	'(generate-binding-code-from-bindings ('bdng . 'bdng-tl) 'generate-lexical-rules)
 	'(list 'cons
-				 (list 'list (list 'list ''const (list 'quote bdng)) (list 'evaluate2 'rules bdng))
+				 (list 'list (list 'list ''const (list 'quote bdng)) (list 'evaluate 'rules bdng))
 				 (generate-binding-code-from-bindings bdng-tl generate-lexical-rules)))
 (define-base-rule
 	'(generate-binding-code-from-bindings () 'generate-lexical-rules)
@@ -307,14 +315,14 @@
 
 (define-base-operator 'wrap-rule-with-evaluate)
 (define-base-rule
-	'(wrap-rule-with-evaluate 'ptn 'expr)
+	'(wrap-rule-with-evaluate 'scope-sym 'ptn 'expr)
 	'(list
 		 (list 'evaluate-impl ''rules ptn)
 		 (list
-			 'evaluate2
+			 'evaluate
 			 (generate-binding-code-from-pattern
 				 ptn
-				 'rules)
+				 scope-sym)
 			 (list 'quote expr))))
 
 (define-base-operator 'compile-rule-pattern-expression-pair)
@@ -343,22 +351,22 @@
 ;		 (define (rule (double 'y) (+ y y)))
 ;		 (double 3)))
 
-;(evaluate-expression
-;	'(scope
-;		 (define (rule foo 'foo))
-;		 (define
-;			 (rule (foo 'x)
-;						 (scope
-;							 (define (rule bar 'bar))
-;							 (define
-;								 (rule (bar 'y) (+ x y)))
-;							 (bar 3))))
-;		 (foo 4)))
-
 (evaluate-expression
 	'(scope
-		 (define (rule bar 'bar))
-		 (define (rule (bar 'y) (+ 1 x)))
 		 (define (rule foo 'foo))
-		 (define (rule (foo 'x) (bar x)))
-		 (foo 2)))
+		 (define
+			 (rule (foo 'x)
+						 (scope
+							 (define (rule bar 'bar))
+							 (define
+								 (rule (bar 'y) (+ x y)))
+							 (bar 3))))
+		 (foo 4)))
+
+;(evaluate-expression
+;	'(scope
+;		 (define (rule bar 'bar))
+;		 (define (rule (bar 'y) (+ 1 y)))
+;		 (define (rule foo 'foo))
+;		 (define (rule (foo 'x) (bar x)))
+;		 (foo 2)))
