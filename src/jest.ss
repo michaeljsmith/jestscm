@@ -256,10 +256,6 @@
   '(evaluate-scope-clauses 'scope-sym 'rules ('clause))
   '(evaluate2 (cons (list (list 'const scope-sym) (list 'quote rules)) rules) clause))
 
-;(list
-;		 (list 'evaluate-impl ''rules ptn)
-;		 (list 'evaluate2 (generate-binding-code-from-pattern ptn lexical-rules) (list 'quote expr)))
-
 (define-base-rule
   '(evaluate-scope-clauses 'scope-sym 'rules ((define 'rule) . 'tail))
   '(evaluate-scope-clauses
