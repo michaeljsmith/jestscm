@@ -255,13 +255,13 @@
   '(evaluate2 (cons (list (list 'const scope-sym) (list 'quote rules)) rules) clause))
 
 (define-base-rule
-  '('evaluate-scope-clauses scope-sym rules (('define rule) . tail))
+  '('evaluate-scope-clauses scope-sym rules (('define ptn expr) . tail))
   '(evaluate-scope-clauses
 		 scope-sym
 		 (cons
 			 (evaluate2
 				 rules
-				 (cons scope-sym rule))
+				 (list scope-sym 'rule ptn expr))
 			 rules)
 		 tail))
 
@@ -326,34 +326,37 @@
 (define (evaluate-expression fm)
 	(evaluate-builtin base-rules `(evaluate base-rules (quote ,fm))))
 
-(evaluate-expression
-	'(scope
-		 (define (rule 'foo 'foo))
-		 (define (rule ('foo s) s))
-		 (foo 1)))
+;(evaluate-expression
+;	'(scope
+;		 (define 'foo 'foo)
+;		 (define ('foo s)
+;		   s)
+;		 (foo 1)))
 
 ;(evaluate-expression
 ;	'(scope
-;		 (define (rule 'double 'double))
-;		 (define (rule ('double y) (+ y y)))
+;		 (define 'double 'double)
+;		 (define ('double y)
+;			 (+ y y))
 ;		 (double 3)))
 
 ;(evaluate-expression
 ;	'(scope
-;		 (define (rule 'foo 'foo))
-;		 (define
-;			 (rule ('foo x)
-;						 (scope
-;							 (define (rule 'bar 'bar))
-;							 (define
-;								 (rule ('bar y) (+ x y)))
-;							 (bar 3))))
+;		 (define 'foo 'foo)
+;		 (define ('foo x)
+;			 (scope
+;				 (define 'bar 'bar)
+;				 (define ('bar y)
+;					 (+ x y))
+;				 (bar 3)))
 ;		 (foo 4)))
 
-;(evaluate-expression
-;	'(scope
-;		 (define (rule 'bar 'bar))
-;		 (define (rule ('bar y) (+ 1 y)))
-;		 (define (rule 'foo 'foo))
-;		 (define (rule ('foo x) (bar x)))
-;		 (foo 2)))
+(evaluate-expression
+	'(scope
+		 (define 'bar 'bar)
+		 (define ('bar y)
+			 (+ 1 y))
+		 (define 'foo 'foo)
+		 (define ('foo x)
+			 (bar x))
+		 (foo 2)))
