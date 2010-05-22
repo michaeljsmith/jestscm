@@ -45,7 +45,6 @@
 (require scheme/list)
 (require scheme/string)
 
-(define dbg-indnt 0)
 (define (evaluate-using-rules fallback in-rules in-fm)
   (define (resolve fm)
 	(let recurse ((rules in-rules))
@@ -119,7 +118,6 @@
 				(if match-scs
 				  (bind-and-evaluate (cadr match-rslt) rule-expr)
 				  (recurse (cdr rules))))))))
-	(printf "{~nin-fm = ~a~nrules = ~a~n~n" in-fm in-rules)
   (let
 		((eval-rslt
 			 (cond
@@ -136,7 +134,6 @@
 									 (cons (evaluate-using-rules fallback in-rules (car subfms))
 												 (eval-subfms (cdr subfms)))))))
 							 (resolve subfms)))))))
-		(printf "Result of ~a:~n~a~n}~n~n" in-fm eval-rslt)
 		eval-rslt))
 
 (define base-rules '())
@@ -157,7 +154,6 @@
 	  (eval quoted-list eval-ns)))
   (evaluate-using-rules scheme-evaluate rules fm))
 (define (push-base-rule rl)
-	(printf "Pushing rule: ~a~n~n" rl)
 	(set! base-rules (cons rl base-rules)))
 
 (push-base-rule '((const compile-pattern) 'compile-pattern))
@@ -190,8 +186,6 @@
   (push-base-rule (compile-operator op)))
 
 (define (compile-rule ptn expr)
-	(printf "Compiling rule: ptn = ~a expr = ~a~n~n" ptn expr)
-	(printf "                ptn = ~a" (evaluate-builtin base-rules `(compile-rule (quote ,ptn) (quote ,expr))))
   (evaluate-builtin
 		base-rules
 		`(compile-rule (quote ,ptn) (quote ,expr))))
@@ -211,29 +205,21 @@
 (define-base-operator 'evaluate)
 (define-base-rule
 	'('evaluate rules fm)
-	'(second
-		 (printf "evaluate:~n  rules=~a~n  fm=~a~n~n" rules fm)
-		 (evaluate-impl rules fm)))
+	'(evaluate-impl rules fm))
 
 (define-base-operator 'evaluate-impl)
 (define-base-rule
   '('evaluate-impl rules fm)
-  '(second
-		 (printf "evaluate-impl fm~n  fm=~a~n  rules=~a~n~n" fm rules)
-		 (evaluate-builtin rules fm)))
+  '(evaluate-builtin rules fm))
 
 (define-base-rule
 	'('evaluate-impl rules (head . tail))
-	'(second
-		 (printf "evaluate-impl (h . t):~n  head=~a~n  tail=~a~n  rules=~a~n~n" head tail rules)
-		 (evaluate-builtin rules ('evaluate-list rules (cons head tail)))))
+	'(evaluate-builtin rules ('evaluate-list rules (cons head tail))))
 
 (define-base-rule
 	'('evaluate-impl rules (scope-sym 'rule ptn expr)) ; Could this be a rule?
-	'(second
-		 (printf "evaluate-impl rule:~n  ptn=~a~n  expr=~a~n  rules=~a~n~n" ptn expr rules)
-		 (compile-rule-pattern-expression-pair
-			 (wrap-rule-with-evaluate scope-sym ptn expr))))
+	'(compile-rule-pattern-expression-pair
+			 (wrap-rule-with-evaluate scope-sym ptn expr)))
 
 (push-base-rule
 	'((fm ((const evaluate-impl)
@@ -352,17 +338,17 @@
 ;		 (define (rule ('double y) (+ y y)))
 ;		 (double 3)))
 
-(evaluate-expression
-	'(scope
-		 (define (rule 'foo 'foo))
-		 (define
-			 (rule ('foo x)
-						 (scope
-							 (define (rule 'bar 'bar))
-							 (define
-								 (rule ('bar y) (+ x y)))
-							 (bar 3))))
-		 (foo 4)))
+;(evaluate-expression
+;	'(scope
+;		 (define (rule 'foo 'foo))
+;		 (define
+;			 (rule ('foo x)
+;						 (scope
+;							 (define (rule 'bar 'bar))
+;							 (define
+;								 (rule ('bar y) (+ x y)))
+;							 (bar 3))))
+;		 (foo 4)))
 
 ;(evaluate-expression
 ;	'(scope
