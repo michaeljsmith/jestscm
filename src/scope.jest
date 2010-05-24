@@ -1,0 +1,109 @@
+; Define a basic evaluation framework. This is a wrapper around the simple
+; evaluation routines above, which works by replacing forms of the form
+; (args...) with (evaluate rules args...). This eval implementation allows
+; lexical scoping.
+(define 'evaluate-list 'evaluate-list)
+(define ('evaluate-list rules (head . tail))
+	(cons (list 'quote ('evaluate rules head)) ('evaluate-list rules tail)))
+
+(define ('evaluate-list rules ())
+	'())
+
+(define 'evaluate 'evaluate)
+(define ('evaluate rules fm)
+	(evaluate-impl rules fm))
+
+(define 'evaluate-impl 'evaluate-impl)
+(define ('evaluate-impl rules fm)
+	(evaluate-using-rules rules fm))
+
+(define ('evaluate-impl rules (head . tail))
+	(evaluate-using-rules rules ('evaluate-list rules (cons head tail))))
+
+(define ('evaluate-impl rules (scope-sym 'rule ptn expr)) ; Could this be a rule?
+	(compile-rule-pattern-expression-pair
+		 (wrap-rule-with-evaluate scope-sym ptn expr)))
+
+(define ('evaluate-impl rules ''val)
+	val)
+
+(define 'evaluate2 'evaluate2)
+(define ('evaluate2 rules fm)
+	(evaluate-using-rules rules (list 'evaluate (list 'quote rules) (list 'quote fm))))
+
+(define 'second 'second)
+(define ('second x0 x1)
+	x1)
+
+(define 'evaluate-scope-clauses 'evaluate-scope-clauses)
+(define ('evaluate-scope-clauses scope-sym rules (head . tail))
+	(second
+		 (evaluate2 (cons (list (list 'const scope-sym) (list 'quote rules)) rules) head)
+		 (evaluate-scope-clauses scope-sym rules tail)))
+
+(define ('evaluate-scope-clauses scope-sym rules ())
+	'())
+
+(define ('evaluate-scope-clauses scope-sym rules (clause))
+	(evaluate2 (cons (list (list 'const scope-sym) (list 'quote rules)) rules) clause))
+
+(define ('evaluate-scope-clauses scope-sym rules (('define ptn . expr) . tail))
+	(evaluate-scope-clauses
+		 scope-sym
+		 (cons
+			 (evaluate2
+				 rules
+				 (list scope-sym 'rule ptn (cons 'scope expr)))
+			 rules)
+		 tail))
+
+(define 'gensym 'gensym)
+(define 'scope 'scope)
+(define ('evaluate-impl rules ('scope . clauses))
+	(evaluate-scope-clauses (gensym "scope") rules clauses))
+
+(define 'extract-bindings-from-pattern 'extract-bindings-from-pattern)
+(define ('extract-bindings-from-pattern ptn)
+	(list ptn))
+
+(define ('extract-bindings-from-pattern ())
+	'())
+
+(define ('extract-bindings-from-pattern (hd . tl))
+	(append
+		 (extract-bindings-from-pattern hd)
+		 (extract-bindings-from-pattern tl))) ; Might cause duplicates, but shouldn't matter.
+
+(define ('extract-bindings-from-pattern ''name)
+	'())
+
+(define 'generate-binding-code-from-bindings 'generate-binding-code-from-bindings)
+(define ('generate-binding-code-from-bindings (bdng . bdng-tl) generate-lexical-rules)
+	(list 'cons
+				 (list 'list (list 'list ''const (list 'quote bdng)) (list 'evaluate 'rules bdng))
+				 (generate-binding-code-from-bindings bdng-tl generate-lexical-rules)))
+(define ('generate-binding-code-from-bindings () generate-lexical-rules)
+	generate-lexical-rules)
+
+(define 'generate-binding-code-from-pattern 'generate-binding-code-from-pattern)
+(define ('generate-binding-code-from-pattern ptn generate-lexical-rules)
+	(generate-binding-code-from-bindings (extract-bindings-from-pattern ptn) generate-lexical-rules))
+
+(define 'wrap-rule-with-evaluate 'wrap-rule-with-evaluate)
+(define ('wrap-rule-with-evaluate scope-sym ptn expr)
+	(list
+		 (list ''evaluate-impl 'rules ptn)
+		 (list
+			 'evaluate2
+			 (list
+				 'cons
+				 (list 'list (list 'list ''const (list 'quote scope-sym)) (list 'list ''quote scope-sym))
+				 (generate-binding-code-from-pattern
+					 ptn
+					 scope-sym))
+			 (list 'quote expr))))
+
+(define 'compile-rule-pattern-expression-pair 'compile-rule-pattern-expression-pair)
+(define ('compile-rule-pattern-expression-pair (ptn expr))
+	(compile-rule ptn expr))
+
