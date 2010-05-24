@@ -51,79 +51,79 @@
 ; Note that this evaluation scheme is very simply implemented, and in particular
 ; scoping is dynamic. Lexical scoping is implemented at a higher level.
 (define (evaluate-using-rules-with-fallback fallback in-rules in-fm)
-  (define (resolve fm)
-	(let recurse ((rules in-rules))
-	  (define (match-const val fm)
-		(cond
-		  ((pair? fm) '(#f))
-		  ((eqv? val fm) '(#t ()))
-		  (else '(#f))))
-	  (define (match-var name fm)
-		`(#t ((,name ,fm))))
-	  (define (match-fm ptn fm)
-		(cond
-		  ((null? ptn) (if (null? fm) '(#t ()) '(#f)))
-		  ((pair? ptn)
-		   (if (pair? fm)
-				 (let* ((hd-rslt (match-ptn (car ptn) (car fm)))
-								(hd-scs (car hd-rslt))
-								(tl-rslt (if hd-scs (match-ptn (cdr ptn) (cdr fm)) '(#f)))
-								(tl-scs (car tl-rslt))
-								(scs (and hd-scs tl-scs)))
-					 (if scs
-						 (let ((hd-bdngs (cadr hd-rslt))
-									 (tl-bdngs (cadr tl-rslt)))
-							 (let merge ((to-mrg hd-bdngs) (bdngs tl-bdngs))
-								 (if (null? to-mrg)
-									 (list #t bdngs)
-									 (let*
-										 ((bdng (car to-mrg))
-											(name (car bdng))
-											(value (cadr bdng))
-											(existing (assv name bdngs))
-											(scs (or (not existing) (equal? value (cadr existing))))
-											(new-bdngs (if scs (if (not existing) (cons bdng bdngs) bdngs) '())))
-										 (if scs
-											 (merge (cdr to-mrg) new-bdngs)
-											 '(#f))))))
+	(define (resolve fm)
+		(let recurse ((rules in-rules))
+			(define (match-const val fm)
+				(cond
+					((pair? fm) '(#f))
+					((eqv? val fm) '(#t ()))
+					(else '(#f))))
+			(define (match-var name fm)
+				`(#t ((,name ,fm))))
+			(define (match-fm ptn fm)
+				(cond
+					((null? ptn) (if (null? fm) '(#t ()) '(#f)))
+					((pair? ptn)
+					 (if (pair? fm)
+						 (let* ((hd-rslt (match-ptn (car ptn) (car fm)))
+										(hd-scs (car hd-rslt))
+										(tl-rslt (if hd-scs (match-ptn (cdr ptn) (cdr fm)) '(#f)))
+										(tl-scs (car tl-rslt))
+										(scs (and hd-scs tl-scs)))
+							 (if scs
+								 (let ((hd-bdngs (cadr hd-rslt))
+											 (tl-bdngs (cadr tl-rslt)))
+									 (let merge ((to-mrg hd-bdngs) (bdngs tl-bdngs))
+										 (if (null? to-mrg)
+											 (list #t bdngs)
+											 (let*
+												 ((bdng (car to-mrg))
+													(name (car bdng))
+													(value (cadr bdng))
+													(existing (assv name bdngs))
+													(scs (or (not existing) (equal? value (cadr existing))))
+													(new-bdngs (if scs (if (not existing) (cons bdng bdngs) bdngs) '())))
+												 (if scs
+													 (merge (cdr to-mrg) new-bdngs)
+													 '(#f))))))
+								 '(#f)))
 						 '(#f)))
-				 '(#f)))
-			(else
-			(match-ptn ptn fm))))
-	  (define (match-ptn ptn fm)
-			(let ((match-ptn-rslt
-							(let ((ptn-tp (car ptn))
-										(ptn-val (cadr ptn)))
-								(cond
-									((eqv? ptn-tp 'const) (match-const ptn-val fm))
-									((eqv? ptn-tp 'var) (match-var ptn-val fm))
-									((eqv? ptn-tp 'fm) (match-fm ptn-val fm))
-									(else (car car))))))
-				match-ptn-rslt))
-		(define (bind-and-evaluate bdngs fm)
-			(let ((new-rules
-							(let bind ((bs bdngs))
-								(if (null? bs)
-									in-rules
-									(cons
-										(let* ((bdng (car bs))
-													 (name (car bdng))
-													 (value (cadr bdng)))
-											(list (list 'const name) (list 'quote value)))
-										(bind (cdr bs)))))))
-				(evaluate-using-rules-with-fallback fallback new-rules fm)))
-	  (cond
-		((null? rules)
-		 (apply fallback (list fm)))
-		(else (let* ((rule (car rules))
-					 (rule-ptn (car rule))
-					 (rule-expr (cadr rule))
-					 (match-rslt (match-ptn rule-ptn fm))
-					 (match-scs (car match-rslt)))
-				(if match-scs
-				  (bind-and-evaluate (cadr match-rslt) rule-expr)
-				  (recurse (cdr rules))))))))
-  (let
+					(else
+						(match-ptn ptn fm))))
+			(define (match-ptn ptn fm)
+				(let ((match-ptn-rslt
+								(let ((ptn-tp (car ptn))
+											(ptn-val (cadr ptn)))
+									(cond
+										((eqv? ptn-tp 'const) (match-const ptn-val fm))
+										((eqv? ptn-tp 'var) (match-var ptn-val fm))
+										((eqv? ptn-tp 'fm) (match-fm ptn-val fm))
+										(else (car car))))))
+					match-ptn-rslt))
+			(define (bind-and-evaluate bdngs fm)
+				(let ((new-rules
+								(let bind ((bs bdngs))
+									(if (null? bs)
+										in-rules
+										(cons
+											(let* ((bdng (car bs))
+														 (name (car bdng))
+														 (value (cadr bdng)))
+												(list (list 'const name) (list 'quote value)))
+											(bind (cdr bs)))))))
+					(evaluate-using-rules-with-fallback fallback new-rules fm)))
+			(cond
+				((null? rules)
+				 (apply fallback (list fm)))
+				(else (let* ((rule (car rules))
+										 (rule-ptn (car rule))
+										 (rule-expr (cadr rule))
+										 (match-rslt (match-ptn rule-ptn fm))
+										 (match-scs (car match-rslt)))
+								(if match-scs
+									(bind-and-evaluate (cadr match-rslt) rule-expr)
+									(recurse (cdr rules))))))))
+	(let
 		((eval-rslt
 			 (cond
 				 ((not (list? in-fm)) (resolve in-fm))
@@ -134,10 +134,10 @@
 					 (begin
 						 (let
 							 ((subfms (let eval-subfms ((subfms in-fm))
-								 (if (null? subfms)
-									 null
-									 (cons (evaluate-using-rules-with-fallback fallback in-rules (car subfms))
-												 (eval-subfms (cdr subfms)))))))
+													(if (null? subfms)
+														null
+														(cons (evaluate-using-rules-with-fallback fallback in-rules (car subfms))
+																	(eval-subfms (cdr subfms)))))))
 							 (resolve subfms)))))))
 		eval-rslt))
 
@@ -147,19 +147,19 @@
 (define-namespace-anchor ns-anchor)
 (define eval-ns (namespace-anchor->namespace ns-anchor))
 (define (evaluate-using-rules rules fm)
-  (define (scheme-evaluate fm)
-	(let ((quoted-list
-					(if (list? fm)
-						(cons
-							(car fm)
-							(let quote-list ((ls (cdr fm)))
-								(cond
-									((null? ls) null)
-									((list? ls) (cons `(quote ,(car ls)) (quote-list (cdr ls))))
-									(else ls))))
-						fm)))
-	  (eval quoted-list eval-ns)))
-  (evaluate-using-rules-with-fallback scheme-evaluate rules fm))
+	(define (scheme-evaluate fm)
+		(let ((quoted-list
+						(if (list? fm)
+							(cons
+								(car fm)
+								(let quote-list ((ls (cdr fm)))
+									(cond
+										((null? ls) null)
+										((list? ls) (cons `(quote ,(car ls)) (quote-list (cdr ls))))
+										(else ls))))
+							fm)))
+			(eval quoted-list eval-ns)))
+	(evaluate-using-rules-with-fallback scheme-evaluate rules fm))
 (define (push-base-rule rl)
 	(set! base-rules (cons rl base-rules)))
 
@@ -176,7 +176,7 @@
 (push-base-rule '((fm ((const compile-pattern) . (fm ((var x) . (fm ()))))) (list 'var x)))
 (push-base-rule '((fm ((const compile-pattern) . (fm ((fm ()) . (fm ()))))) '(fm ())))
 (push-base-rule '((fm ((const compile-pattern) . (fm ((fm ((var hd) . (var tl))) . (fm ())))))
-				  (list 'fm (cons (compile-pattern hd) (compile-pattern tl)))))
+									(list 'fm (cons (compile-pattern hd) (compile-pattern tl)))))
 (push-base-rule '((fm (
 											 (const compile-pattern) .
 											 (fm ((fm (
@@ -184,27 +184,27 @@
 																 (fm ((var x).(fm ()))))) . (fm ())))))
 									(list 'const x)))
 (push-base-rule '((fm ((const compile-rule) . (fm ((var ptn) . (fm ((var expr) . (fm ())))))))
-				  (list (compile-pattern ptn) expr)))
+									(list (compile-pattern ptn) expr)))
 
 ; Some scheme functions for evaluating expressions represented using quoted
 ; scheme forms.
 (define (compile-operator op)
-  (let ((rslt
-		  (evaluate-using-rules
-			base-rules
-			`(compile-rule (quote (quote ,op)) (quote (quote ,op))))))
-	rslt))
+	(let ((rslt
+					(evaluate-using-rules
+						base-rules
+						`(compile-rule (quote (quote ,op)) (quote (quote ,op))))))
+		rslt))
 
 (define (define-base-operator op)
-  (push-base-rule (compile-operator op)))
+	(push-base-rule (compile-operator op)))
 
 (define (compile-rule ptn expr)
-  (evaluate-using-rules
+	(evaluate-using-rules
 		base-rules
 		`(compile-rule (quote ,ptn) (quote ,expr))))
 
 (define (define-base-rule ptn expr)
-  (push-base-rule (compile-rule ptn expr)))
+	(push-base-rule (compile-rule ptn expr)))
 
 ; Define a basic evaluation framework. This is a wrapper around the simple
 ; evaluation routines above, which works by replacing forms of the form
@@ -212,24 +212,22 @@
 ; lexical scoping.
 (define-base-operator 'evaluate-list)
 (define-base-rule
-  '('evaluate-list rules (head . tail))
-  '(cons (list 'quote ('evaluate rules head)) ('evaluate-list rules tail)))
+	'('evaluate-list rules (head . tail))
+	'(cons (list 'quote ('evaluate rules head)) ('evaluate-list rules tail)))
 
 (define-base-rule
-  '('evaluate-list rules ())
-  ''())
+	'('evaluate-list rules ())
+	''())
 
 (define-base-operator 'evaluate)
 (define-base-rule
 	'('evaluate rules fm)
-	'(second
-		 (printf "Evaluate: fm = ~a~n     rules = ~a~n~n" fm rules)
-		 (evaluate-impl rules fm)))
+	'(evaluate-impl rules fm))
 
 (define-base-operator 'evaluate-impl)
 (define-base-rule
-  '('evaluate-impl rules fm)
-  '(evaluate-using-rules rules fm))
+	'('evaluate-impl rules fm)
+	'(evaluate-using-rules rules fm))
 
 (define-base-rule
 	'('evaluate-impl rules (head . tail))
@@ -237,17 +235,15 @@
 
 (define-base-rule
 	'('evaluate-impl rules (scope-sym 'rule ptn expr)) ; Could this be a rule?
-	'(second
-		 (printf "Compile rule: ptn = ~a expr = ~a~n" ptn expr)
-		 (compile-rule-pattern-expression-pair
-			 (wrap-rule-with-evaluate scope-sym ptn expr))))
+	'(compile-rule-pattern-expression-pair
+		 (wrap-rule-with-evaluate scope-sym ptn expr)))
 
 (push-base-rule
 	'((fm ((const evaluate-impl)
 				 . (fm ((var rules)
-						. (fm ((fm ((const quote)
-												. (fm ((var val)
-															 . (fm ()))))) . (fm ())))))))
+								. (fm ((fm ((const quote)
+														. (fm ((var val)
+																	 . (fm ()))))) . (fm ())))))))
 		val))
 
 (define-base-operator 'evaluate2)
@@ -257,42 +253,40 @@
 
 (define-base-operator 'second)
 (define-base-rule
-   '('second x0 x1)
-   'x1)
+	'('second x0 x1)
+	'x1)
 
 (define-base-operator 'evaluate-scope-clauses)
 (define-base-rule
-  '('evaluate-scope-clauses scope-sym rules (head . tail))
-  '(second
+	'('evaluate-scope-clauses scope-sym rules (head . tail))
+	'(second
 		 (evaluate2 (cons (list (list 'const scope-sym) (list 'quote rules)) rules) head)
 		 (evaluate-scope-clauses scope-sym rules tail)))
 
 (define-base-rule
-  '('evaluate-scope-clauses scope-sym rules ())
-  ''())
+	'('evaluate-scope-clauses scope-sym rules ())
+	''())
 
 (define-base-rule
-  '('evaluate-scope-clauses scope-sym rules (clause))
-  '(evaluate2 (cons (list (list 'const scope-sym) (list 'quote rules)) rules) clause))
+	'('evaluate-scope-clauses scope-sym rules (clause))
+	'(evaluate2 (cons (list (list 'const scope-sym) (list 'quote rules)) rules) clause))
 
 (define-base-rule
-  '('evaluate-scope-clauses scope-sym rules (('define ptn . expr) . tail))
-  '(second
-		 (printf "expr = ~a~n" (cons 'scope expr))
-		 (evaluate-scope-clauses
-		 scope-sym
-		 (cons
-			 (evaluate2
-				 rules
-				 (list scope-sym 'rule ptn (cons 'scope expr)))
-			 rules)
-		 tail)))
+	'('evaluate-scope-clauses scope-sym rules (('define ptn . expr) . tail))
+'(evaluate-scope-clauses
+	 scope-sym
+	 (cons
+		 (evaluate2
+			 rules
+			 (list scope-sym 'rule ptn (cons 'scope expr)))
+		 rules)
+	 tail))
 
 (define-base-operator 'gensym)
 (define-base-operator 'scope)
 (define-base-rule
-  '('evaluate-impl rules ('scope . clauses))
-  '(evaluate-scope-clauses (gensym "scope") rules clauses))
+	'('evaluate-impl rules ('scope . clauses))
+	'(evaluate-scope-clauses (gensym "scope") rules clauses))
 
 (define-base-operator 'extract-bindings-from-pattern)
 (define-base-rule
@@ -301,7 +295,7 @@
 
 (define-base-rule
 	'('extract-bindings-from-pattern ())
-	''())
+''())
 
 (define-base-rule
 	'('extract-bindings-from-pattern (hd . tl))
@@ -335,17 +329,14 @@
 	'(list
 		 (list ''evaluate-impl 'rules ptn)
 		 (list
-			 'second
-			 (list 'printf "~a = ~a~n" (list 'quote scope-sym) scope-sym)
+			 'evaluate2
 			 (list
-				 'evaluate2
-				 (list
-					 'cons
-					 (list 'list (list 'list ''const (list 'quote scope-sym)) (list 'list ''quote scope-sym))
-					 (generate-binding-code-from-pattern
-						 ptn
-						 scope-sym))
-				 (list 'quote expr)))))
+				 'cons
+				 (list 'list (list 'list ''const (list 'quote scope-sym)) (list 'list ''quote scope-sym))
+				 (generate-binding-code-from-pattern
+					 ptn
+					 scope-sym))
+			 (list 'quote expr))))
 
 (define-base-operator 'compile-rule-pattern-expression-pair)
 (define-base-rule
