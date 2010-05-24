@@ -25,19 +25,15 @@
 ;  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 ;  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 ;  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-;  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+;  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS:wa
 ;  IN THE SOFTWARE.
 ;
 ;--------------------------------------------------------------------------------
 
 ;--------------------------------------------------------------------------------
-; Steps:
-; * Define apply.
-; * Define rule for compiling rules.
-; * Define main evaluate rule, including macro step.
-; * Define scope rule.
-; * Define def.
-; * Define quantify.
+; TODO:
+; * Auto defining operators.
+; * 
 ;--------------------------------------------------------------------------------
 
 #lang scheme
@@ -45,7 +41,7 @@
 (require scheme/list)
 (require scheme/string)
 
-(define (evaluate-using-rules fallback in-rules in-fm)
+(define (evaluate-using-rules-with-fallback fallback in-rules in-fm)
   (define (resolve fm)
 	(let recurse ((rules in-rules))
 	  (define (match-const val fm)
@@ -106,7 +102,7 @@
 													 (value (cadr bdng)))
 											(list (list 'const name) (list 'quote value)))
 										(bind (cdr bs)))))))
-				(evaluate-using-rules fallback new-rules fm)))
+				(evaluate-using-rules-with-fallback fallback new-rules fm)))
 	  (cond
 		((null? rules)
 		 (apply fallback (list fm)))
@@ -131,7 +127,7 @@
 							 ((subfms (let eval-subfms ((subfms in-fm))
 								 (if (null? subfms)
 									 null
-									 (cons (evaluate-using-rules fallback in-rules (car subfms))
+									 (cons (evaluate-using-rules-with-fallback fallback in-rules (car subfms))
 												 (eval-subfms (cdr subfms)))))))
 							 (resolve subfms)))))))
 		eval-rslt))
@@ -139,7 +135,7 @@
 (define base-rules '())
 (define-namespace-anchor ns-anchor)
 (define eval-ns (namespace-anchor->namespace ns-anchor))
-(define (evaluate-builtin rules fm)
+(define (evaluate-using-rules rules fm)
   (define (scheme-evaluate fm)
 	(let ((quoted-list
 					(if (list? fm)
@@ -152,7 +148,7 @@
 									(else ls))))
 						fm)))
 	  (eval quoted-list eval-ns)))
-  (evaluate-using-rules scheme-evaluate rules fm))
+  (evaluate-using-rules-with-fallback scheme-evaluate rules fm))
 (define (push-base-rule rl)
 	(set! base-rules (cons rl base-rules)))
 
@@ -177,7 +173,7 @@
 
 (define (compile-operator op)
   (let ((rslt
-		  (evaluate-builtin
+		  (evaluate-using-rules
 			base-rules
 			`(compile-rule (quote (quote ,op)) (quote (quote ,op))))))
 	rslt))
@@ -186,7 +182,7 @@
   (push-base-rule (compile-operator op)))
 
 (define (compile-rule ptn expr)
-  (evaluate-builtin
+  (evaluate-using-rules
 		base-rules
 		`(compile-rule (quote ,ptn) (quote ,expr))))
 
@@ -210,11 +206,11 @@
 (define-base-operator 'evaluate-impl)
 (define-base-rule
   '('evaluate-impl rules fm)
-  '(evaluate-builtin rules fm))
+  '(evaluate-using-rules rules fm))
 
 (define-base-rule
 	'('evaluate-impl rules (head . tail))
-	'(evaluate-builtin rules ('evaluate-list rules (cons head tail))))
+	'(evaluate-using-rules rules ('evaluate-list rules (cons head tail))))
 
 (define-base-rule
 	'('evaluate-impl rules (scope-sym 'rule ptn expr)) ; Could this be a rule?
@@ -232,7 +228,7 @@
 (define-base-operator 'evaluate2)
 (define-base-rule
 	'('evaluate2 rules fm)
-	'(evaluate-builtin rules (list 'evaluate (list 'quote rules) (list 'quote fm))))
+	'(evaluate-using-rules rules (list 'evaluate (list 'quote rules) (list 'quote fm))))
 
 (define-base-operator 'second)
 (define-base-rule
@@ -324,7 +320,7 @@
 	'(compile-rule ptn expr))
 
 (define (evaluate-expression fm)
-	(evaluate-builtin base-rules `(evaluate base-rules (quote ,fm))))
+	(evaluate-using-rules base-rules `(evaluate base-rules (quote ,fm))))
 
 ;(evaluate-expression
 ;	'(scope
