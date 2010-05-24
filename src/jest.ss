@@ -338,7 +338,7 @@
 			 'second
 			 (list 'printf "~a = ~a~n" (list 'quote scope-sym) scope-sym)
 			 (list
-				 'evaluate
+				 'evaluate2
 				 (list
 					 'cons
 					 (list 'list (list 'list ''const (list 'quote scope-sym)) (list 'list ''quote scope-sym))
@@ -390,23 +390,23 @@
 ;			 (bar x))
 ;		 (foo 2)))
 
-;(evaluate-expression
-;	'(scope
-;		 (define 'foo 'foo)
-;		 (define ('foo x)
-;			 x)
-;		 (define 'bar 'bar)
-;		 (define ('bar y)
-;			 (scope
-;				 (foo y)))
-;		 (bar 1)))
-
 (evaluate-expression
 	'(scope
 		 (define 'foo 'foo)
 		 (define ('foo x)
-			 (bar x))
+			 x)
 		 (define 'bar 'bar)
 		 (define ('bar y)
-			 y)
-		 (foo 2)))
+			 (scope
+				 (foo (+ 1 y))))
+		 (bar 1)))
+
+;(evaluate-expression
+;	'(scope
+;		 (define 'foo 'foo)
+;		 (define ('foo x)
+;			 (bar x))
+;		 (define 'bar 'bar)
+;		 (define ('bar y)
+;			 y)
+;		 (foo 2)))
