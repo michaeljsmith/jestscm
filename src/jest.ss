@@ -222,7 +222,9 @@
 (define-base-operator 'evaluate)
 (define-base-rule
 	'('evaluate rules fm)
-	'(evaluate-impl rules fm))
+	'(second
+		 (printf "Evaluate: fm = ~a~n     rules = ~a~n~n" fm rules)
+		 (evaluate-impl rules fm)))
 
 (define-base-operator 'evaluate-impl)
 (define-base-rule
@@ -235,8 +237,10 @@
 
 (define-base-rule
 	'('evaluate-impl rules (scope-sym 'rule ptn expr)) ; Could this be a rule?
-	'(compile-rule-pattern-expression-pair
-			 (wrap-rule-with-evaluate scope-sym ptn expr)))
+	'(second
+		 (printf "Compile rule: ptn = ~a expr = ~a~n" ptn expr)
+		 (compile-rule-pattern-expression-pair
+			 (wrap-rule-with-evaluate scope-sym ptn expr))))
 
 (push-base-rule
 	'((fm ((const evaluate-impl)
@@ -273,14 +277,16 @@
 
 (define-base-rule
   '('evaluate-scope-clauses scope-sym rules (('define ptn expr) . tail))
-  '(evaluate-scope-clauses
+  '(second
+		 (printf "expr = ~a~n" (cons 'scope expr))
+		 (evaluate-scope-clauses
 		 scope-sym
 		 (cons
 			 (evaluate2
 				 rules
 				 (list scope-sym 'rule ptn expr))
 			 rules)
-		 tail))
+		 tail)))
 
 (define-base-operator 'gensym)
 (define-base-operator 'scope)
@@ -329,11 +335,17 @@
 	'(list
 		 (list ''evaluate-impl 'rules ptn)
 		 (list
-			 'evaluate
-			 (generate-binding-code-from-pattern
-				 ptn
-				 scope-sym)
-			 (list 'quote expr))))
+			 'second
+			 (list 'printf "~a = ~a~n" (list 'quote scope-sym) scope-sym)
+			 (list
+				 'evaluate
+				 (list
+					 'cons
+					 (list 'list (list 'list ''const (list 'quote scope-sym)) (list 'list ''quote scope-sym))
+					 (generate-binding-code-from-pattern
+						 ptn
+						 scope-sym))
+				 (list 'quote expr)))))
 
 (define-base-operator 'compile-rule-pattern-expression-pair)
 (define-base-rule
@@ -368,12 +380,33 @@
 ;				 (bar 3)))
 ;		 (foo 4)))
 
+;(evaluate-expression
+;	'(scope
+;		 (define 'bar 'bar)
+;		 (define ('bar y)
+;			 (+ 1 y))
+;		 (define 'foo 'foo)
+;		 (define ('foo x)
+;			 (bar x))
+;		 (foo 2)))
+
+;(evaluate-expression
+;	'(scope
+;		 (define 'foo 'foo)
+;		 (define ('foo x)
+;			 x)
+;		 (define 'bar 'bar)
+;		 (define ('bar y)
+;			 (scope
+;				 (foo y)))
+;		 (bar 1)))
+
 (evaluate-expression
 	'(scope
-		 (define 'bar 'bar)
-		 (define ('bar y)
-			 (+ 1 y))
 		 (define 'foo 'foo)
 		 (define ('foo x)
 			 (bar x))
+		 (define 'bar 'bar)
+		 (define ('bar y)
+			 y)
 		 (foo 2)))
