@@ -98,7 +98,7 @@
 										((eqv? ptn-tp 'const) (match-const ptn-val fm))
 										((eqv? ptn-tp 'var) (match-var ptn-val fm))
 										((eqv? ptn-tp 'fm) (match-fm ptn-val fm))
-										(else (printf "~a~n" ptn))))))
+										(else (car car))))))
 					match-ptn-rslt))
 			(define (bind-and-evaluate bdngs fm)
 				(let ((new-rules
@@ -188,10 +188,8 @@
 											 (fm ((fm ((const quote)
 																 . (fm ((fm (
 																				(const quote) .
-																				(fm ((var x) . (fm ()))))) . (fm ()))) . (fm ()))) . (fm ())))))
-									(second
-										(printf "Got here.~n")
-										(list 'fm (cons (list 'const 'quote) (list 'var x))))))
+																				(fm ((var x) . (fm ()))))) . (fm ())) . (fm ())))) . (fm ())))))
+									(list 'fm (cons (list 'const 'quote) (list 'var x)))))
 (push-base-rule '((fm ((const compile-rule) . (fm ((var ptn) . (fm ((var expr) . (fm ())))))))
 									(list (compile-pattern ptn) expr)))
 
@@ -247,13 +245,9 @@
 	'(compile-rule-pattern-expression-pair
 		 (wrap-rule-with-evaluate scope-sym ptn expr)))
 
-(push-base-rule
-	'((fm ((const evaluate-impl)
-				 . (fm ((var rules)
-								. (fm ((fm ((const quote)
-														. (fm ((var val)
-																	 . (fm ()))))) . (fm ())))))))
-		val))
+(define-base-rule
+	'('evaluate-impl rules ''val)
+	'val)
 
 (define-base-operator 'evaluate2)
 (define-base-rule
@@ -304,7 +298,7 @@
 
 (define-base-rule
 	'('extract-bindings-from-pattern ())
-''())
+	''())
 
 (define-base-rule
 	'('extract-bindings-from-pattern (hd . tl))
@@ -312,10 +306,9 @@
 		 (extract-bindings-from-pattern hd)
 		 (extract-bindings-from-pattern tl))) ; Might cause duplicates, but shouldn't matter.
 
-(push-base-rule
-	'((fm ((const extract-bindings-from-pattern)
-				 . (fm ((fm ((const quote) . (fm ((var name) . (fm ()))))) . (fm ())))))
-		'()))
+(define-base-rule
+	'('extract-bindings-from-pattern ''name)
+	''())
 
 (define-base-operator 'generate-binding-code-from-bindings)
 (define-base-rule
@@ -412,4 +405,4 @@
 		 (define 'bar 'bar)
 		 (define ('bar y)
 			 y)
-		 (foo 2)))
+		 (foo 1)))
