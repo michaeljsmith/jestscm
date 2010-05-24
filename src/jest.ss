@@ -213,137 +213,30 @@
 (define (define-base-rule ptn expr)
 	(push-base-rule (compile-rule ptn expr)))
 
-; Define a basic evaluation framework. This is a wrapper around the simple
-; evaluation routines above, which works by replacing forms of the form
-; (args...) with (evaluate rules args...). This eval implementation allows
-; lexical scoping.
-(define-base-operator 'evaluate-list)
-(define-base-rule
-	'('evaluate-list rules (head . tail))
-	'(cons (list 'quote ('evaluate rules head)) ('evaluate-list rules tail)))
+(define (include-rules-from-file filename)
+	(define (load-from-port p)
+			(port-count-lines! p)
+			(let read-next-data ()
+				(let ((src (read p)))
+							;(set! src stx)
+							;(unless (eof-object? stx)
+							(unless (eof-object? src)
+								;(set! src (ruse-perform-reader-expansions (syntax->source stx)))
+								(cond
+									((not (list? src)) (evaluate-using-rules base-rules src))
+									((null? src) null)
+									((eqv? (car src) 'define)
+									 (let ((ptn (cadr src))
+												 (expr (caddr src)))
+										 (push-base-rule (evaluate-using-rules
+																			 base-rules
+																			 `(compile-rule (quote ,ptn) (quote ,expr))))))
+									(else (evaluate-using-rules base-rules src))))
+							(unless (eof-object? src)
+								(read-next-data)))))
+	(call-with-input-file filename load-from-port))
 
-(define-base-rule
-	'('evaluate-list rules ())
-	''())
-
-(define-base-operator 'evaluate)
-(define-base-rule
-	'('evaluate rules fm)
-	'(evaluate-impl rules fm))
-
-(define-base-operator 'evaluate-impl)
-(define-base-rule
-	'('evaluate-impl rules fm)
-	'(evaluate-using-rules rules fm))
-
-(define-base-rule
-	'('evaluate-impl rules (head . tail))
-	'(evaluate-using-rules rules ('evaluate-list rules (cons head tail))))
-
-(define-base-rule
-	'('evaluate-impl rules (scope-sym 'rule ptn expr)) ; Could this be a rule?
-	'(compile-rule-pattern-expression-pair
-		 (wrap-rule-with-evaluate scope-sym ptn expr)))
-
-(define-base-rule
-	'('evaluate-impl rules ''val)
-	'val)
-
-(define-base-operator 'evaluate2)
-(define-base-rule
-	'('evaluate2 rules fm)
-	'(evaluate-using-rules rules (list 'evaluate (list 'quote rules) (list 'quote fm))))
-
-(define-base-operator 'second)
-(define-base-rule
-	'('second x0 x1)
-	'x1)
-
-(define-base-operator 'evaluate-scope-clauses)
-(define-base-rule
-	'('evaluate-scope-clauses scope-sym rules (head . tail))
-	'(second
-		 (evaluate2 (cons (list (list 'const scope-sym) (list 'quote rules)) rules) head)
-		 (evaluate-scope-clauses scope-sym rules tail)))
-
-(define-base-rule
-	'('evaluate-scope-clauses scope-sym rules ())
-	''())
-
-(define-base-rule
-	'('evaluate-scope-clauses scope-sym rules (clause))
-	'(evaluate2 (cons (list (list 'const scope-sym) (list 'quote rules)) rules) clause))
-
-(define-base-rule
-	'('evaluate-scope-clauses scope-sym rules (('define ptn . expr) . tail))
-'(evaluate-scope-clauses
-	 scope-sym
-	 (cons
-		 (evaluate2
-			 rules
-			 (list scope-sym 'rule ptn (cons 'scope expr)))
-		 rules)
-	 tail))
-
-(define-base-operator 'gensym)
-(define-base-operator 'scope)
-(define-base-rule
-	'('evaluate-impl rules ('scope . clauses))
-	'(evaluate-scope-clauses (gensym "scope") rules clauses))
-
-(define-base-operator 'extract-bindings-from-pattern)
-(define-base-rule
-	'('extract-bindings-from-pattern ptn)
-	'(list ptn))
-
-(define-base-rule
-	'('extract-bindings-from-pattern ())
-	''())
-
-(define-base-rule
-	'('extract-bindings-from-pattern (hd . tl))
-	'(append
-		 (extract-bindings-from-pattern hd)
-		 (extract-bindings-from-pattern tl))) ; Might cause duplicates, but shouldn't matter.
-
-(define-base-rule
-	'('extract-bindings-from-pattern ''name)
-	''())
-
-(define-base-operator 'generate-binding-code-from-bindings)
-(define-base-rule
-	'('generate-binding-code-from-bindings (bdng . bdng-tl) generate-lexical-rules)
-	'(list 'cons
-				 (list 'list (list 'list ''const (list 'quote bdng)) (list 'evaluate 'rules bdng))
-				 (generate-binding-code-from-bindings bdng-tl generate-lexical-rules)))
-(define-base-rule
-	'('generate-binding-code-from-bindings () generate-lexical-rules)
-	'generate-lexical-rules)
-
-(define-base-operator 'generate-binding-code-from-pattern)
-(define-base-rule
-	'('generate-binding-code-from-pattern ptn generate-lexical-rules)
-	'(generate-binding-code-from-bindings (extract-bindings-from-pattern ptn) generate-lexical-rules))
-
-(define-base-operator 'wrap-rule-with-evaluate)
-(define-base-rule
-	'('wrap-rule-with-evaluate scope-sym ptn expr)
-	'(list
-		 (list ''evaluate-impl 'rules ptn)
-		 (list
-			 'evaluate2
-			 (list
-				 'cons
-				 (list 'list (list 'list ''const (list 'quote scope-sym)) (list 'list ''quote scope-sym))
-				 (generate-binding-code-from-pattern
-					 ptn
-					 scope-sym))
-			 (list 'quote expr))))
-
-(define-base-operator 'compile-rule-pattern-expression-pair)
-(define-base-rule
-	'('compile-rule-pattern-expression-pair (ptn expr))
-	'(compile-rule ptn expr))
+(include-rules-from-file "src/scope.jest")
 
 (define (evaluate-expression fm)
 	(evaluate-using-rules base-rules `(evaluate base-rules (quote ,fm))))
