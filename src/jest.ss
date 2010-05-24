@@ -222,7 +222,9 @@
 (define-base-operator 'evaluate)
 (define-base-rule
 	'('evaluate rules fm)
-	'(evaluate-impl rules fm))
+	'(second
+		 (printf "Evaluate: fm = ~a~n     rules = ~a~n~n" fm rules)
+		 (evaluate-impl rules fm)))
 
 (define-base-operator 'evaluate-impl)
 (define-base-rule
@@ -235,8 +237,10 @@
 
 (define-base-rule
 	'('evaluate-impl rules (scope-sym 'rule ptn expr)) ; Could this be a rule?
-	'(compile-rule-pattern-expression-pair
-			 (wrap-rule-with-evaluate scope-sym ptn expr)))
+	'(second
+		 (printf "Compile rule: ptn = ~a expr = ~a~n" ptn expr)
+		 (compile-rule-pattern-expression-pair
+			 (wrap-rule-with-evaluate scope-sym ptn expr))))
 
 (push-base-rule
 	'((fm ((const evaluate-impl)
@@ -272,15 +276,17 @@
   '(evaluate2 (cons (list (list 'const scope-sym) (list 'quote rules)) rules) clause))
 
 (define-base-rule
-  '('evaluate-scope-clauses scope-sym rules (('define ptn expr) . tail))
-  '(evaluate-scope-clauses
+  '('evaluate-scope-clauses scope-sym rules (('define ptn . expr) . tail))
+  '(second
+		 (printf "expr = ~a~n" (cons 'scope expr))
+		 (evaluate-scope-clauses
 		 scope-sym
 		 (cons
 			 (evaluate2
 				 rules
-				 (list scope-sym 'rule ptn expr))
+				 (list scope-sym 'rule ptn (cons 'scope expr)))
 			 rules)
-		 tail))
+		 tail)))
 
 (define-base-operator 'gensym)
 (define-base-operator 'scope)
