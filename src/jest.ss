@@ -98,7 +98,7 @@
 										((eqv? ptn-tp 'const) (match-const ptn-val fm))
 										((eqv? ptn-tp 'var) (match-var ptn-val fm))
 										((eqv? ptn-tp 'fm) (match-fm ptn-val fm))
-										(else (car car))))))
+										(else (printf "~a~n" ptn))))))
 					match-ptn-rslt))
 			(define (bind-and-evaluate bdngs fm)
 				(let ((new-rules
@@ -183,6 +183,15 @@
 																 (const quote) .
 																 (fm ((var x).(fm ()))))) . (fm ())))))
 									(list 'const x)))
+(push-base-rule '((fm (
+											 (const compile-pattern) .
+											 (fm ((fm ((const quote)
+																 . (fm ((fm (
+																				(const quote) .
+																				(fm ((var x) . (fm ()))))) . (fm ()))) . (fm ()))) . (fm ())))))
+									(second
+										(printf "Got here.~n")
+										(list 'fm (cons (list 'const 'quote) (list 'var x))))))
 (push-base-rule '((fm ((const compile-rule) . (fm ((var ptn) . (fm ((var expr) . (fm ())))))))
 									(list (compile-pattern ptn) expr)))
 
