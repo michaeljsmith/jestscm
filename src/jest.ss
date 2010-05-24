@@ -276,7 +276,7 @@
   '(evaluate2 (cons (list (list 'const scope-sym) (list 'quote rules)) rules) clause))
 
 (define-base-rule
-  '('evaluate-scope-clauses scope-sym rules (('define ptn expr) . tail))
+  '('evaluate-scope-clauses scope-sym rules (('define ptn . expr) . tail))
   '(second
 		 (printf "expr = ~a~n" (cons 'scope expr))
 		 (evaluate-scope-clauses
@@ -284,7 +284,7 @@
 		 (cons
 			 (evaluate2
 				 rules
-				 (list scope-sym 'rule ptn expr))
+				 (list scope-sym 'rule ptn (cons 'scope expr)))
 			 rules)
 		 tail)))
 
@@ -390,23 +390,26 @@
 ;			 (bar x))
 ;		 (foo 2)))
 
-(evaluate-expression
-	'(scope
-		 (define 'foo 'foo)
-		 (define ('foo x)
-			 x)
-		 (define 'bar 'bar)
-		 (define ('bar y)
-			 (scope
-				 (foo (+ 1 y))))
-		 (bar 1)))
-
 ;(evaluate-expression
 ;	'(scope
 ;		 (define 'foo 'foo)
 ;		 (define ('foo x)
-;			 (bar x))
+;			 x)
 ;		 (define 'bar 'bar)
 ;		 (define ('bar y)
-;			 y)
-;		 (foo 2)))
+;			 (scope
+;				 (foo (+ 1 y))))
+;		 (bar 1)))
+
+(evaluate-expression
+	'(scope
+		 (define 'foo 'foo)
+		 (define ('foo x)
+			 (define 'baz 'baz)
+			 (define ('baz z)
+				 (bar x))
+			 (baz x))
+		 (define 'bar 'bar)
+		 (define ('bar y)
+			 y)
+		 (foo 2)))
