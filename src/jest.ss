@@ -41,6 +41,15 @@
 (require scheme/list)
 (require scheme/string)
 
+; Basic evaluation function, implemented in scheme. This function is the
+; lowest-level method of evaluating a function, used for bootstrapping
+; higher level self-hosting evaluations. Ideally this function will not
+; actually be run during use, a higher level version will be self-compiled
+; to a backend. This function takes a fallback scheme lambda to use
+; to evaluate any undefined forms, which allows standard scheme expressions
+; to be compiled.
+; Note that this evaluation scheme is very simply implemented, and in particular
+; scoping is dynamic. Lexical scoping is implemented at a higher level.
 (define (evaluate-using-rules-with-fallback fallback in-rules in-fm)
   (define (resolve fm)
 	(let recurse ((rules in-rules))
@@ -132,6 +141,8 @@
 							 (resolve subfms)))))))
 		eval-rslt))
 
+; Wrapper for the above evaluation function which uses standard scheme eval()
+; to handle fallback cases.
 (define base-rules '())
 (define-namespace-anchor ns-anchor)
 (define eval-ns (namespace-anchor->namespace ns-anchor))
@@ -152,6 +163,10 @@
 (define (push-base-rule rl)
 	(set! base-rules (cons rl base-rules)))
 
+; Basic rules for compiling a form representing a rule, using a user-friendly
+; pattern format, to a rule with a lower-level pattern compatible with the above
+; evaluation functions. These rules must themselves be, somewhat tediously, written
+; by hand using the low-level format.
 (push-base-rule '((const compile-pattern) 'compile-pattern))
 (push-base-rule '((const compile-rule) 'compile-rule))
 (push-base-rule '((const cons) 'cons))
@@ -171,6 +186,8 @@
 (push-base-rule '((fm ((const compile-rule) . (fm ((var ptn) . (fm ((var expr) . (fm ())))))))
 				  (list (compile-pattern ptn) expr)))
 
+; Some scheme functions for evaluating expressions represented using quoted
+; scheme forms.
 (define (compile-operator op)
   (let ((rslt
 		  (evaluate-using-rules
@@ -189,6 +206,10 @@
 (define (define-base-rule ptn expr)
   (push-base-rule (compile-rule ptn expr)))
 
+; Define a basic evaluation framework. This is a wrapper around the simple
+; evaluation routines above, which works by replacing forms of the form
+; (args...) with (evaluate rules args...). This eval implementation allows
+; lexical scoping.
 (define-base-operator 'evaluate-list)
 (define-base-rule
   '('evaluate-list rules (head . tail))
