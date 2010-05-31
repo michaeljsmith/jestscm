@@ -193,68 +193,47 @@
 (push-base-rule '((fm ((const compile-rule) . (fm ((var ptn) . (fm ((var expr) . (fm ())))))))
 									(list (compile-pattern ptn) expr)))
 
-; Some scheme functions for evaluating expressions represented using quoted
-; scheme forms.
-(define (compile-operator op)
-	(let ((rslt
-					(evaluate-using-rules
-						base-rules
-						`(compile-rule (quote (quote ,op)) (quote (quote ,op))))))
-		rslt))
+;(define (include-rules-from-file filename expression-wrapper)
+;	(define (load-from-port p)
+;			(port-count-lines! p)
+;			(let read-next-data ()
+;				(let ((src (read p)))
+;							;(set! src stx)
+;							;(unless (eof-object? stx)
+;							(unless (eof-object? src)
+;								;(set! src (ruse-perform-reader-expansions (syntax->source stx)))
+;								(cond
+;									((not (list? src)) (evaluate-using-rules base-rules src))
+;									((null? src) null)
+;									((eqv? (car src) 'define)
+;									 (let ((ptn (cadr src))
+;												 (expr (cddr src)))
+;										 (printf "rule: ~v~n" (evaluate-using-rules
+;																			 base-rules
+;																			 `(compile-rule (quote ,ptn)
+;																											(quote ,(expression-wrapper expr)))))
+;										 (push-base-rule (evaluate-using-rules
+;																			 base-rules
+;																			 `(compile-rule (quote ,ptn)
+;																											(quote ,(expression-wrapper expr)))))))
+;									(else (evaluate-using-rules base-rules src))))
+;							(unless (eof-object? src)
+;								(read-next-data)))))
+;	(call-with-input-file filename load-from-port))
 
-(define (define-base-operator op)
-	(push-base-rule (compile-operator op)))
+;(include-rules-from-file "src/scope.jest"
+;												 (lambda (fm) (car fm)))
+;(include-rules-from-file
+;	"src/quasi.jest"
+;	(lambda (fm)
+;		;`(evaluate-using-rules base-rules (quote ,(cons 'scope fm)))))
+;		`(evaluate-using-rules rules (list 'evaluate (list 'quote rules) '',(cons 'scope fm)))))
+;
+;(define (evaluate-expression fm)
+;	(evaluate-using-rules base-rules `(evaluate ',base-rules (quote ,fm))))
 
-(define (compile-rule ptn expr)
-	(evaluate-using-rules
-		base-rules
-		`(compile-rule (quote ,ptn) (quote ,expr))))
-(define (define-base-rule ptn expr)
-	(push-base-rule (compile-rule ptn expr)))
-
-(define (include-rules-from-file filename expression-wrapper)
-	(define (load-from-port p)
-			(port-count-lines! p)
-			(let read-next-data ()
-				(let ((src (read p)))
-							;(set! src stx)
-							;(unless (eof-object? stx)
-							(unless (eof-object? src)
-								;(set! src (ruse-perform-reader-expansions (syntax->source stx)))
-								(cond
-									((not (list? src)) (evaluate-using-rules base-rules src))
-									((null? src) null)
-									((eqv? (car src) 'define)
-									 (let ((ptn (cadr src))
-												 (expr (cddr src)))
-										 (printf "rule: ~v~n" (evaluate-using-rules
-																			 base-rules
-																			 `(compile-rule (quote ,ptn)
-																											(quote ,(expression-wrapper expr)))))
-										 (push-base-rule (evaluate-using-rules
-																			 base-rules
-																			 `(compile-rule (quote ,ptn)
-																											(quote ,(expression-wrapper expr)))))))
-									(else (evaluate-using-rules base-rules src))))
-							(unless (eof-object? src)
-								(read-next-data)))))
-	(call-with-input-file filename load-from-port))
-
-(include-rules-from-file "src/scope.jest"
-												 (lambda (fm) (car fm)))
-(printf "---------------------~n")
-(include-rules-from-file
-	"src/quasi.jest"
-	(lambda (fm)
-		;`(evaluate-using-rules base-rules (quote ,(cons 'scope fm)))))
-		`(evaluate-using-rules rules (list 'evaluate (list 'quote rules) '',(cons 'scope fm)))))
-
-(define (evaluate-expression fm)
-	(evaluate-using-rules base-rules `(evaluate ',base-rules (quote ,fm))))
-
-(printf "---------------------~n")
-(evaluate-expression
-	'`hello)
+;(evaluate-expression
+;	'`hello)
 
 ;(evaluate-expression
 ;	'(scope
