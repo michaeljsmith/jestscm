@@ -11,7 +11,9 @@
 
 (define 'evaluate 'evaluate)
 (define ('evaluate rules fm)
-	(evaluate-impl rules fm))
+	(second
+		(printf "evaluate:~nrules=~v~nform=~v~n~n" rules fm)
+		(evaluate-impl rules fm)))
 
 (define 'evaluate-impl 'evaluate-impl)
 (define ('evaluate-impl rules fm)

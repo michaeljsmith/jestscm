@@ -123,7 +123,6 @@
 								(if match-scs
 									(bind-and-evaluate (cadr match-rslt) rule-expr)
 									(recurse (cdr rules))))))))
-	(printf "eval: ~a~n" in-fm)
 	(let
 		((eval-rslt
 			 (cond
@@ -210,11 +209,10 @@
 	(evaluate-using-rules
 		base-rules
 		`(compile-rule (quote ,ptn) (quote ,expr))))
-
 (define (define-base-rule ptn expr)
 	(push-base-rule (compile-rule ptn expr)))
 
-(define (include-rules-from-file filename)
+(define (include-rules-from-file filename expression-wrapper)
 	(define (load-from-port p)
 			(port-count-lines! p)
 			(let read-next-data ()
@@ -228,24 +226,48 @@
 									((null? src) null)
 									((eqv? (car src) 'define)
 									 (let ((ptn (cadr src))
-												 (expr (caddr src)))
+												 (expr (cddr src)))
+										 (printf "rule: ~v~n" (evaluate-using-rules
+																			 base-rules
+																			 `(compile-rule (quote ,ptn)
+																											(quote ,(expression-wrapper expr)))))
 										 (push-base-rule (evaluate-using-rules
 																			 base-rules
-																			 `(compile-rule (quote ,ptn) (quote ,expr))))))
+																			 `(compile-rule (quote ,ptn)
+																											(quote ,(expression-wrapper expr)))))))
 									(else (evaluate-using-rules base-rules src))))
 							(unless (eof-object? src)
 								(read-next-data)))))
 	(call-with-input-file filename load-from-port))
 
-(include-rules-from-file "src/scope.jest")
-(include-rules-from-file "src/quasi.jest")
+(include-rules-from-file "src/scope.jest"
+												 (lambda (fm) (car fm)))
+(printf "---------------------~n")
+(include-rules-from-file
+	"src/quasi.jest"
+	(lambda (fm)
+		;`(evaluate-using-rules base-rules (quote ,(cons 'scope fm)))))
+		`(evaluate-using-rules rules (list 'evaluate (list 'quote rules) '',(cons 'scope fm)))))
 
 (define (evaluate-expression fm)
-	(evaluate-using-rules base-rules `(evaluate base-rules (quote ,fm))))
+	(evaluate-using-rules base-rules `(evaluate ',base-rules (quote ,fm))))
 
 (printf "---------------------~n")
 (evaluate-expression
 	'`hello)
+
+;(evaluate-expression
+;	'(scope
+;		 (define 'foo 'foo)
+;		 (define ('foo x)
+;			 (define 'baz 'baz)
+;			 (define ('baz z)
+;				 (bar x))
+;			 (baz x))
+;		 (define 'bar 'bar)
+;		 (define ('bar y)
+;			 y)
+;		 (foo 1)))
 
 ;(evaluate-expression
 ;	'(scope
@@ -292,16 +314,3 @@
 ;			 (scope
 ;				 (foo (+ 1 y))))
 ;		 (bar 1)))
-
-;(evaluate-expression
-;	'(scope
-;		 (define 'foo 'foo)
-;		 (define ('foo x)
-;			 (define 'baz 'baz)
-;			 (define ('baz z)
-;				 (bar x))
-;			 (baz x))
-;		 (define 'bar 'bar)
-;		 (define ('bar y)
-;			 y)
-;		 (foo 1)))
