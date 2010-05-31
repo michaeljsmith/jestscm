@@ -1,5 +1,7 @@
 (define 'quasiquote 'quasiquote)
-(define ('evaluate rules ('quasiquote fm))
+(define ('evaluate rules ('quasiquote form))
+	(printf "Got here.~n")
+
 	(define 'unqote 'unqote)
 
 	(define 'evaluate-args 'evaluate-args)
@@ -9,11 +11,13 @@
 		'())
 
 	(define 'evaluate-form 'evaluate-form)
-	(define ('evaluate-form fm)
-		fm)
+	(define ('evaluate-form form)
+		form)
 	(define ('evaluate-form (head . tail))
 		(evaluate-args (cons head tail)))
 	(define ('evaluate-form ())
 		(evaluate-args '()))
-	(define ('evaluate-form ('unquote fm))
-		(evaluate rules fm)))
+	(define ('evaluate-form ('unquote form))
+		(evaluate rules form))
+	
+	(evaluate-form form))
