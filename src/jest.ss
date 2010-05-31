@@ -123,6 +123,7 @@
 								(if match-scs
 									(bind-and-evaluate (cadr match-rslt) rule-expr)
 									(recurse (cdr rules))))))))
+	(printf "eval: ~a~n" in-fm)
 	(let
 		((eval-rslt
 			 (cond
@@ -237,9 +238,14 @@
 	(call-with-input-file filename load-from-port))
 
 (include-rules-from-file "src/scope.jest")
+(include-rules-from-file "src/quasi.jest")
 
 (define (evaluate-expression fm)
 	(evaluate-using-rules base-rules `(evaluate base-rules (quote ,fm))))
+
+(printf "---------------------~n")
+(evaluate-expression
+	'`hello)
 
 ;(evaluate-expression
 ;	'(scope
@@ -287,15 +293,15 @@
 ;				 (foo (+ 1 y))))
 ;		 (bar 1)))
 
-(evaluate-expression
-	'(scope
-		 (define 'foo 'foo)
-		 (define ('foo x)
-			 (define 'baz 'baz)
-			 (define ('baz z)
-				 (bar x))
-			 (baz x))
-		 (define 'bar 'bar)
-		 (define ('bar y)
-			 y)
-		 (foo 1)))
+;(evaluate-expression
+;	'(scope
+;		 (define 'foo 'foo)
+;		 (define ('foo x)
+;			 (define 'baz 'baz)
+;			 (define ('baz z)
+;				 (bar x))
+;			 (baz x))
+;		 (define 'bar 'bar)
+;		 (define ('bar y)
+;			 y)
+;		 (foo 1)))
