@@ -1,0 +1,13 @@
+(define 'evaluate 'evaluate)
+
+(define ('evaluate rules form)
+	(evaluate-using-rules rules form))
+(define ('evaluate rules (head . tail))
+	(evaluate-using-rules rules (evaluate-args rules (cons head tail))))
+
+(define 'evaluate-args 'evaluate-args)
+
+(define ('evaluate-args rules (head . tail))
+	(cons (evaluate rules head) (evaluate-args rules tail)))
+(define ('evaluate-args rules ())
+	'())
