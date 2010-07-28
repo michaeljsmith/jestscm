@@ -41,6 +41,25 @@
 (require scheme/list)
 (require scheme/string)
 
+(define base-rules '())
+(define-namespace-anchor ns-anchor)
+(define eval-ns (namespace-anchor->namespace ns-anchor))
+
+(define (scheme-evaluate fm)
+	(let ((quoted-list
+					(if (list? fm)
+						(cons
+							(car fm)
+							(let quote-list ((ls (cdr fm)))
+								(cond
+									((null? ls) null)
+									((list? ls) (cons `(quote ,(car ls)) (quote-list (cdr ls))))
+									(else ls))))
+						fm)))
+		(eval quoted-list eval-ns)))
+
+(define _evaluate scheme-evaluate)
+
 ; Basic evaluation function, implemented in scheme. This function is the
 ; lowest-level method of evaluating a function, used for bootstrapping
 ; higher level self-hosting evaluations. Ideally this function will not
@@ -123,13 +142,13 @@
 								(if match-scs
 									(bind-and-evaluate (cadr match-rslt) rule-expr)
 									(recurse (cdr rules))))))))
+	;(printf "evaluating: ~a~n" in-fm)
 	(let
 		((eval-rslt
 			 (cond
 				 ((not (list? in-fm)) (resolve in-fm))
 				 ((eqv? 'quote (car in-fm))
-					(begin
-						(cadr in-fm)))
+					(cadr in-fm))
 				 (else
 					 (begin
 						 (let
@@ -143,22 +162,7 @@
 
 ; Wrapper for the above evaluation function which uses standard scheme eval()
 ; to handle fallback cases.
-(define base-rules '())
-(define-namespace-anchor ns-anchor)
-(define eval-ns (namespace-anchor->namespace ns-anchor))
 (define (evaluate-using-rules rules fm)
-	(define (scheme-evaluate fm)
-		(let ((quoted-list
-						(if (list? fm)
-							(cons
-								(car fm)
-								(let quote-list ((ls (cdr fm)))
-									(cond
-										((null? ls) null)
-										((list? ls) (cons `(quote ,(car ls)) (quote-list (cdr ls))))
-										(else ls))))
-							fm)))
-			(eval quoted-list eval-ns)))
 	(evaluate-using-rules-with-fallback scheme-evaluate rules fm))
 (define (push-base-rule rl)
 	(set! base-rules (cons rl base-rules)))
@@ -210,10 +214,6 @@
 							((eqv? (car src) 'define)
 							 (let ((ptn (cadr src))
 										 (expr (cddr src)))
-								 (printf "rule: ~v~n" (evaluate-using-rules
-																				base-rules
-																				`(compile-rule (quote ,ptn)
-																											 (quote ,(expression-wrapper expr)))))
 								 (push-base-rule (evaluate-using-rules
 																	 base-rules
 																	 `(compile-rule (quote ,ptn)

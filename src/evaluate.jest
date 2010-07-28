@@ -15,10 +15,23 @@
 (define ('apply-rules rules ((ptn rplcmt) . rules-tail) expr)
 	('apply-rules-handle-match-result rules rplcmt rules-tail expr ('match-pattern ptn expr)))
 (define ('apply-rules rules () expr)
-	('_evaluate rules expr))
+	('second
+		(printf "_evaluate ~a~n" expr)
+		('_evaluate expr)))
+
+(define ('evaluate-args rules (arg-head . arg-tail))
+	('second
+		(printf "evaluating args: ~a~n" arg-head)
+		(cons ('evaluate rules arg-head) ('evaluate-args rules arg-tail))))
+(define ('evaluate-args rules ())
+	'())
 
 (define ('evaluate rules expr)
-	('apply-rules rules cur-rules expr))
+	('apply-rules rules rules expr))
+(define ('evaluate rules (expr-head . expr-tail))
+	('apply-rules rules rules ('evaluate-args rules (cons expr-head expr-tail))))
+(define ('evaluate rules ())
+	('apply-rules rules rules '()))
 (define ('evaluate rules ('quote val))
 	val)
 
@@ -48,24 +61,6 @@
 		('printf "combine-match-results:~n~a~n~a~n~n" bdngs0 bdngs1)
 		('merge-match-bindings bdngs0 bdngs1)))
 
-;(define ('match-form-recurse (ptn-head . ptn-tail) (expr-head . expr-tail) result)
-;	('match-form-recurse ptn-tail expr-tail
-;	 ('combine-match-results ('match-pattern ptn-head expr-head) result)))
-;(define ('match-form-recurse () expr results)
-;	(second
-;		(printf "fail 1~n")
-;		'(fail ())))
-;(define ('match-form-recurse ptn () result)
-;	(second
-;		(printf "fail 2~n")
-;		'(fail ())))
-;(define ('match-form-recurse () () result)
-;	'(succeed ()))
-;(define ('match-form-recurse (ptn-head . ptn-tail) (expr-head . expr-tail) ('fail bdngs))
-;	(second
-;		(printf "fail 3~n")
-;		'(fail ())))
-
 (define ('match-pattern ('const val) expr)
 	(list ('if ('and (not (list? expr)) (eqv? val expr)) 'succeed 'fail) '()))
 
@@ -87,4 +82,11 @@
 (define ('match-pattern ('fm ()) ())
 	'(succeed ()))
 
-('match-pattern '(fm ((fm ((const foo) . (var a))) . (fm ((var b) . (fm ()))))) '((foo 1) (3 4)))
+;('match-pattern '(fm ((fm ((const foo) . (var a))) . (fm ((var b) . (fm ()))))) '((foo 1) (3 4)))
+;'(fm ((fm ((const foo) . (var a))) . (fm ((var b) . (fm ())))))
+;'((foo 1) (3 4))
+;('evaluate
+; '(((fm ((fm ((const foo) . (var a))) . (fm ((var b) . (fm ())))))
+;	 (list a b)))
+; '('(foo 1) '(3 4)))
+
