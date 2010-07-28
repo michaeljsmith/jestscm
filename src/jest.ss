@@ -195,31 +195,33 @@
 
 (define (include-rules-from-file filename expression-wrapper)
 	(define (load-from-port p)
-			(port-count-lines! p)
+		(port-count-lines! p)
+		(let ((rslt (void)))
 			(let read-next-data ()
 				(let ((src (read p)))
-							;(set! src stx)
-							;(unless (eof-object? stx)
-							(unless (eof-object? src)
-								;(set! src (ruse-perform-reader-expansions (syntax->source stx)))
-								(cond
-									((not (list? src)) (evaluate-using-rules base-rules src))
-									((null? src) null)
-									((eqv? (car src) 'define)
-									 (let ((ptn (cadr src))
-												 (expr (cddr src)))
-										 (printf "rule: ~v~n" (evaluate-using-rules
-																			 base-rules
-																			 `(compile-rule (quote ,ptn)
-																											(quote ,(expression-wrapper expr)))))
-										 (push-base-rule (evaluate-using-rules
-																			 base-rules
-																			 `(compile-rule (quote ,ptn)
-																											(quote ,(expression-wrapper expr)))))))
-									(else (evaluate-using-rules base-rules src))))
-							(unless (eof-object? src)
-								(read-next-data)))))
+					;(set! src stx)
+					;(unless (eof-object? stx)
+					(if (eof-object? src)
+						rslt
+						;(set! src (ruse-perform-reader-expansions (syntax->source stx)))
+						(cond
+							((not (list? src)) (set! rslt (evaluate-using-rules base-rules src)))
+							((null? src) (set! rslt null))
+							((eqv? (car src) 'define)
+							 (let ((ptn (cadr src))
+										 (expr (cddr src)))
+								 (printf "rule: ~v~n" (evaluate-using-rules
+																				base-rules
+																				`(compile-rule (quote ,ptn)
+																											 (quote ,(expression-wrapper expr)))))
+								 (push-base-rule (evaluate-using-rules
+																	 base-rules
+																	 `(compile-rule (quote ,ptn)
+																									(quote ,(expression-wrapper expr)))))))
+							(else (set! rslt (evaluate-using-rules base-rules src)))))
+					(if (eof-object? src)
+						rslt
+						(read-next-data))))))
 	(call-with-input-file filename load-from-port))
 
-;(include-rules-from-file "src/scope.jest"
-;												 (lambda (fm) (car fm)))
+(include-rules-from-file "src/evaluate.jest" (lambda (fm) (car fm)))
