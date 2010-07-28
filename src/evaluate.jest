@@ -10,14 +10,16 @@
 (define ('apply-rules-handle-match-result rules rplcmt rules-tail expr ('fail bdngs))
 	('apply-rules rules rules-tail expr))
 (define ('apply-rules-handle-match-result rules rplcmt rules-tail expr ('succeed bdngs))
-	('evaluate (append ('rules-from-match-bindings bdngs) rules-tail) rplcmt))
+	('second
+		(printf "apply rule: ~a~n" rplcmt)
+		('evaluate (append ('rules-from-match-bindings bdngs) rules) rplcmt)))
 
 (define ('apply-rules rules ((ptn rplcmt) . rules-tail) expr)
 	('apply-rules-handle-match-result rules rplcmt rules-tail expr ('match-pattern ptn expr)))
 (define ('apply-rules rules () expr)
 	('second
-		(printf "_evaluate ~a~n" expr)
-		('_evaluate expr)))
+	 (printf "_evaluate: ~a~n" expr)
+	 ('_evaluate expr)))
 
 (define ('evaluate-args rules (arg-head . arg-tail))
 	(cons ('evaluate rules arg-head) ('evaluate-args rules arg-tail)))
@@ -25,13 +27,21 @@
 	'())
 
 (define ('evaluate rules expr)
-	('apply-rules rules rules expr))
+	('second
+	 (printf "evaluate expr: ~a rules=~a~n" expr rules)
+	 ('apply-rules rules rules expr)))
 (define ('evaluate rules (expr-head . expr-tail))
-	('apply-rules rules rules ('evaluate-args rules (cons expr-head expr-tail))))
+	('second
+		(printf "evaluate cons: ~a rules=~a~n" (cons expr-head expr-tail) rules)
+		('apply-rules rules rules ('evaluate-args rules (cons expr-head expr-tail)))))
 (define ('evaluate rules ())
-	('apply-rules rules rules '()))
+	('second
+		(printf "evaluate ():~n rules=~a~n" rules)
+		('apply-rules rules rules '())))
 (define ('evaluate rules ('quote val))
-	val)
+	('second
+		(printf "evaluate quote: '~a rules=~a~n" val rules)
+		val))
 
 (define ('merge-match-binding (bdng-sym bdng-val) ((bdng-head-sym bdng-head-val) . bdng-tail) merged)
 	('merge-match-binding (list bdng-sym bdng-val)
@@ -68,12 +78,34 @@
 ;(define ('match-pattern ('fm (ptn-head . ptn-tail)) (expr-head . expr-tail))
 ;	('match-form-recurse (cons ptn-head ptn-tail) (cons expr-head expr-tail) '(succeed ())))
 (define ('match-pattern ('fm (ptn-head . ptn-tail)) (expr-head . expr-tail))
-	('combine-match-results ('match-pattern ptn-head expr-head) ('match-pattern ptn-tail expr-tail)))
+	('combine-match-results
+		('match-pattern ptn-head expr-head)
+		('match-pattern ptn-tail expr-tail)))
 (define ('match-pattern ('fm ()) ())
 	'(succeed ()))
 
-((fm ((const match-pattern) fm ((fm ((const var) fm ((var name) fm ()))) fm ((var expr) fm ()))))
- (list (quote succeed) (list (list name expr))))
+;('evaluate
+; '(((fm ((const match-pattern2) fm ((fm ((const var) fm ((var name) fm ()))) fm ((var expr) fm ()))))
+;		(list (quote succeed) (list (list name expr)))))
+; '('match-pattern2 '(var a) 1))
+
+;('evaluate
+; '(((fm ((const match-pattern) fm ((fm ((const const) fm ((var val) fm ()))) fm ((var expr) fm ()))))
+;		(list ((quote if) ((quote and) (not (list? expr)) (eqv? val expr)) (quote succeed) (quote fail)) (quote ()))))
+; '('match-pattern '(const a) 'a))
+
+;('match-pattern
+; '(fm ((const compile-pattern) fm ((fm ((const quote) fm ((fm ((const quote) fm ((var x) fm ()))) fm ()) fm ())) fm ())))
+; ;'(fm ((const compile-pattern) fm ((fm ((const quote) fm ((var x) fm ()))) fm ())))
+; '('list '(var a) 1))
+
+;('match-pattern
+; '(fm ((fm ((const quote) fm ((var x) fm ()))) fm ()) fm ())
+; '((var a)))
+
+;('match-pattern
+; '(fm ((const quote) fm ((fm ((const quote) fm ((var x) fm ()))) fm ()) fm ()))
+; '(quote (var a)))
 
 ;('match-pattern '(fm ()) '())
 ;('match-pattern '(var a) 1)
@@ -87,6 +119,8 @@
 ; '(((fm ((fm ((const foo) . (var a))) . (fm ((var b) . (fm ())))))
 ;	 (list a b)))
 ; '('(foo 1) '(3 4)))
+
+('evaluate '() '(void))
 
 ;(define ('test-outer (bar))
 ;	bar)

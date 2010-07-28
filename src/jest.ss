@@ -223,7 +223,6 @@
 																	 `(compile-rule (quote ,ptn)
 																									(quote ,(expression-wrapper expr)))))))
 							(else (begin
-											(printf "rules=~a~n" global-rules)
 											(set! rslt
 											(evaluate-using-rules global-rules
 																						`('evaluate (quote ,global-rules) (quote ,src))))))))
