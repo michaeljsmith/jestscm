@@ -192,7 +192,7 @@
 											 (fm ((fm ((const quote)
 																 . (fm ((fm (
 																				(const quote) .
-																				(fm ((var x) . (fm ()))))) . (fm ())) . (fm ())))) . (fm ())))))
+																				(fm ((var x) . (fm ()))))) . (fm ()))))) . (fm ())))))
 									(list 'fm (cons (list 'const 'quote) (list 'var x)))))
 (push-base-rule '((fm ((const compile-rule) . (fm ((var ptn) . (fm ((var expr) . (fm ())))))))
 									(list (compile-pattern ptn) expr)))
@@ -215,6 +215,7 @@
 							;((not (list? src)) (set! rslt (evaluate-using-rules global-rules src)))
 							((null? src) (set! rslt null))
 							((and (list? src) (eqv? (car src) 'define))
+
 							 (let ((ptn (cadr src))
 										 (expr (cddr src)))
 								 (push-global-rule (evaluate-using-rules
