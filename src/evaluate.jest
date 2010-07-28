@@ -20,9 +20,7 @@
 		('_evaluate expr)))
 
 (define ('evaluate-args rules (arg-head . arg-tail))
-	('second
-		(printf "evaluating args: ~a~n" arg-head)
-		(cons ('evaluate rules arg-head) ('evaluate-args rules arg-tail))))
+	(cons ('evaluate rules arg-head) ('evaluate-args rules arg-tail)))
 (define ('evaluate-args rules ())
 	'())
 
@@ -57,36 +55,34 @@
 (define ('combine-match-results rslts0 rslts1)
 	'(fail ()))
 (define ('combine-match-results ('succeed bdngs0) ('succeed bdngs1))
-	('second
-		('printf "combine-match-results:~n~a~n~a~n~n" bdngs0 bdngs1)
-		('merge-match-bindings bdngs0 bdngs1)))
+	('merge-match-bindings bdngs0 bdngs1))
 
 (define ('match-pattern ('const val) expr)
 	(list ('if ('and (not (list? expr)) (eqv? val expr)) 'succeed 'fail) '()))
 
 (define ('match-pattern ('var name) expr)
-	('second
-	 (printf "matching var: ~a against ~a~n" (list 'var name) expr)
-	 (list 'succeed (list (list name expr)))))
+	(list 'succeed (list (list name expr))))
 
 (define ('match-pattern ('fm ptn) expr)
 	(list 'fail '()))
 ;(define ('match-pattern ('fm (ptn-head . ptn-tail)) (expr-head . expr-tail))
 ;	('match-form-recurse (cons ptn-head ptn-tail) (cons expr-head expr-tail) '(succeed ())))
 (define ('match-pattern ('fm (ptn-head . ptn-tail)) (expr-head . expr-tail))
-	('second
-		(printf "matching form: ~a against ~a~n"
-						(list 'fm (cons ptn-head ptn-tail))
-						(cons expr-head expr-tail))
-		('combine-match-results ('match-pattern ptn-head expr-head) ('match-pattern ptn-tail expr-tail))))
+	('combine-match-results ('match-pattern ptn-head expr-head) ('match-pattern ptn-tail expr-tail)))
 (define ('match-pattern ('fm ()) ())
 	'(succeed ()))
 
 ;('match-pattern '(fm ((fm ((const foo) . (var a))) . (fm ((var b) . (fm ()))))) '((foo 1) (3 4)))
 ;'(fm ((fm ((const foo) . (var a))) . (fm ((var b) . (fm ())))))
 ;'((foo 1) (3 4))
+
 ;('evaluate
 ; '(((fm ((fm ((const foo) . (var a))) . (fm ((var b) . (fm ())))))
 ;	 (list a b)))
 ; '('(foo 1) '(3 4)))
+
+(define ('test-func foo)
+	(list foo))
+
+('test-func 1)
 

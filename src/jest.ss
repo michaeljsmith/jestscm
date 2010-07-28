@@ -197,6 +197,10 @@
 (push-base-rule '((fm ((const compile-rule) . (fm ((var ptn) . (fm ((var expr) . (fm ())))))))
 									(list (compile-pattern ptn) expr)))
 
+(define global-rules base-rules)
+(define (push-global-rule rl)
+	(set! global-rules (cons rl global-rules)))
+
 (define (include-rules-from-file filename expression-wrapper)
 	(define (load-from-port p)
 		(port-count-lines! p)
@@ -207,18 +211,19 @@
 					;(unless (eof-object? stx)
 					(if (eof-object? src)
 						rslt
-						;(set! src (ruse-perform-reader-expansions (syntax->source stx)))
 						(cond
-							((not (list? src)) (set! rslt (evaluate-using-rules base-rules src)))
+							;((not (list? src)) (set! rslt (evaluate-using-rules global-rules src)))
 							((null? src) (set! rslt null))
-							((eqv? (car src) 'define)
+							((and (list? src) (eqv? (car src) 'define))
 							 (let ((ptn (cadr src))
 										 (expr (cddr src)))
-								 (push-base-rule (evaluate-using-rules
-																	 base-rules
+								 (push-global-rule (evaluate-using-rules
+																	 global-rules
 																	 `(compile-rule (quote ,ptn)
 																									(quote ,(expression-wrapper expr)))))))
-							(else (set! rslt (evaluate-using-rules base-rules src)))))
+							(else (set! rslt
+											(evaluate-using-rules global-rules
+																						`('evaluate (quote ,global-rules) (quote ,src)))))))
 					(if (eof-object? src)
 						rslt
 						(read-next-data))))))
