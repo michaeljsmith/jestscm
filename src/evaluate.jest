@@ -72,6 +72,13 @@
 (define ('match-pattern ('fm ()) ())
 	'(succeed ()))
 
+((fm ((const match-pattern) fm ((fm ((const var) fm ((var name) fm ()))) fm ((var expr) fm ()))))
+ (list (quote succeed) (list (list name expr))))
+
+;('match-pattern '(fm ()) '())
+;('match-pattern '(var a) 1)
+;('match-pattern '(const a) 'a)
+
 ;('match-pattern '(fm ((fm ((const foo) . (var a))) . (fm ((var b) . (fm ()))))) '((foo 1) (3 4)))
 ;'(fm ((fm ((const foo) . (var a))) . (fm ((var b) . (fm ())))))
 ;'((foo 1) (3 4))
@@ -81,8 +88,10 @@
 ;	 (list a b)))
 ; '('(foo 1) '(3 4)))
 
-(define ('test-func foo)
-	(list foo))
-
-('test-func 1)
+;(define ('test-outer (bar))
+;	bar)
+;(define ('test-func foo)
+;	(list foo))
+;
+;('test-outer ('test-func 1))
 

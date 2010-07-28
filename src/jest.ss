@@ -221,9 +221,11 @@
 																	 global-rules
 																	 `(compile-rule (quote ,ptn)
 																									(quote ,(expression-wrapper expr)))))))
-							(else (set! rslt
+							(else (begin
+											(printf "rules=~a~n" global-rules)
+											(set! rslt
 											(evaluate-using-rules global-rules
-																						`('evaluate (quote ,global-rules) (quote ,src)))))))
+																						`('evaluate (quote ,global-rules) (quote ,src))))))))
 					(if (eof-object? src)
 						rslt
 						(read-next-data))))))
