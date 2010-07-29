@@ -103,10 +103,10 @@
 ;'(fm ((fm ((const foo) . (var a))) . (fm ((var b) . (fm ())))))
 ;'((foo 1) (3 4))
 
-('evaluate
- '(((fm ((fm ((const foo) . (var a))) . (fm ((var b) . (fm ())))))
-	 (list a b)))
- '('(foo 1) '(3 4)))
+;('evaluate
+; '(((fm ((fm ((const foo) . (var a))) . (fm ((var b) . (fm ())))))
+;	 (list a b)))
+; '('(foo 1) '(3 4)))
 
 ;('evaluate '() '(list 1 2))
 

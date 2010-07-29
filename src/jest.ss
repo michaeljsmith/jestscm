@@ -232,3 +232,4 @@
 	(call-with-input-file filename load-from-port))
 
 (include-rules-from-file "src/evaluate.jest" (lambda (fm) (car fm)))
+(include-rules-from-file "src/quasiquote.jest" (lambda (fm) (car fm)))
