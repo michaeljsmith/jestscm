@@ -15,7 +15,7 @@
 (define ('apply-rules rules ((ptn rplcmt) . rules-tail) expr)
 	('apply-rules-handle-match-result rules rplcmt rules-tail expr ('match-pattern ptn expr)))
 (define ('apply-rules rules () expr)
-	('_evaluate expr))
+	('evaluate-builtin expr))
 
 (define ('evaluate-args rules (arg-head . arg-tail))
 	(cons ('evaluate rules arg-head) ('evaluate-args rules arg-tail)))

@@ -1,0 +1,45 @@
+(define ('_evaluate rules ('scope . clauses))
+	('second
+	 (printf "evaluate scope: ~a~n" clauses)
+	 ('evaluate-scope-clauses (gensym 'scope) rules clauses (void))))
+
+(define ('evaluate-scope-clauses scope-sym rules (clause-head . clause-tail) last-rslt)
+	('second
+	 (printf "evaluate-scope-clauses sym: ~a head: ~a~n" scope-sym clause-head)
+		('evaluate-scope-clauses scope-sym rules clause-tail
+	 ('evaluate-scope-clause scope-sym rules clause-head))))
+(define ('evaluate-scope-clauses scope-sym rules (('define ptn expr) . clause-tail) last-rslt)
+	('second
+	 (printf "evaluate-scope-clauses define sym: ~a ptn ~a expr ~a~n" scope-sym ptn expr)
+	 ('evaluate-scope-clauses scope-sym
+		(cons ('compile-scope-rule scope-sym ptn expr) rules) clause-tail last-rslt)))
+(define ('evaluate-scope-clauses scope-sym rules () last-rslt)
+	last-rslt)
+
+(define ('evaluate-scope-clause scope-sym rules clause)
+	;('evaluate (cons `((var ,scope-sym) ,rules) rules) clause))
+	('second
+	 (printf "evaluate-scope-clause rules ~a~n" rules)
+	 ('evaluate (cons (list (list 'const scope-sym) rules) rules) clause)))
+
+(define ('compile-scope-rule scope-sym ptn expr)
+	;('second
+	;	(printf "compiled rule: ~a~n" (list ('compile-pattern `('evaluate rules ,ptn))
+	;								`('evaluate ,scope-sym expr)))
+	;	(list ('compile-pattern `('evaluate rules ,ptn))
+	;			`('evaluate ,scope-sym expr))))
+	('second
+	 (printf "compiled rule: sym ~a~n" scope-sym)
+	; (list ('compiled-pattern (list ''evaluate 'rules ptn))
+	;				(list ''evaluate scope-sym 'expr))))
+		(list ('compile-pattern (list ''_evaluate 'rules ptn))
+					(list ''evaluate scope-sym expr))))
+
+;(scope (printf "hello~n"))
+;(scope 1)
+;(scope (printf "action1~n") (printf "action2~n") 2)
+(scope
+	(define 'x 5)
+	x)
+
+;('compile-scope-rule 'sam 'x 5)

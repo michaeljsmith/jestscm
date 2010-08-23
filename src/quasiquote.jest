@@ -1,3 +1,7 @@
+(define 'quasiquote 'quasiquote)
+(define 'unquote 'quasiquote)
+(define 'unquote-splicing 'quasiquote)
+
 (define ('evaluate-quasiquoted rules expr)
 	expr)
 (define ('evaluate-quasiquoted rules (expr-head . expr-tail))
@@ -7,7 +11,7 @@
 (define ('evaluate-quasiquoted rules ('unquote expr))
 	('evaluate rules expr))
 
-(define ('evaluate rules ('quasiquote expr))
+(define ('_evaluate rules ('quasiquote expr))
 	('evaluate-quasiquoted rules expr))
 
 ;(define 'c '(44))

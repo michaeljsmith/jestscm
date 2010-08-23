@@ -58,7 +58,7 @@
 						fm)))
 		(eval quoted-list eval-ns)))
 
-(define _evaluate scheme-evaluate)
+(define evaluate-builtin scheme-evaluate)
 
 ; Basic evaluation function, implemented in scheme. This function is the
 ; lowest-level method of evaluating a function, used for bootstrapping
@@ -233,3 +233,4 @@
 
 (include-rules-from-file "src/evaluate.jest" (lambda (fm) (car fm)))
 (include-rules-from-file "src/quasiquote.jest" (lambda (fm) (car fm)))
+(include-rules-from-file "src/scope.jest" (lambda (fm) (car fm)))
