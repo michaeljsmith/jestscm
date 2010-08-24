@@ -149,6 +149,8 @@
 				 ((not (list? in-fm)) (resolve in-fm))
 				 ((eqv? 'quote (car in-fm))
 					(cadr in-fm))
+				 ((eqv? 'evaluate (car in-fm))
+					(evaluate-using-rules-with-fallback fallback 
 				 (else
 					 (begin
 						 (let

@@ -38,8 +38,8 @@
 ;(scope (printf "hello~n"))
 ;(scope 1)
 ;(scope (printf "action1~n") (printf "action2~n") 2)
-(scope
-	(define 'x 5)
-	x)
+;(scope
+;	(define 'x 5)
+;	x)
 
 ;('compile-scope-rule 'sam 'x 5)
