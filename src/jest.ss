@@ -56,6 +56,7 @@
 									((list? ls) (cons `(quote ,(car ls)) (quote-list (cdr ls))))
 									(else ls))))
 						fm)))
+		(printf "evaluate-builtin: ~a~n" fm)
 		(eval quoted-list eval-ns)))
 
 (define evaluate-builtin scheme-evaluate)
@@ -130,19 +131,20 @@
 														 (value (cadr bdng)))
 												(list (list 'const name) (list 'quote value)))
 											(bind (cdr bs)))))))
-					(evaluate-using-rules-with-fallback fallback new-rules fm)))
+					(evaluate-using-rules-with-fallback scheme-evaluate new-rules fm)))
 			(cond
 				((null? rules)
 				 (apply fallback (list fm)))
-				(else (let* ((rule (car rules))
+				(else
+					(begin
+						(let* ((rule (car rules))
 										 (rule-ptn (car rule))
 										 (rule-expr (cadr rule))
 										 (match-rslt (match-ptn rule-ptn fm))
 										 (match-scs (car match-rslt)))
 								(if match-scs
 									(bind-and-evaluate (cadr match-rslt) rule-expr)
-									(recurse (cdr rules))))))))
-	;(printf "evaluating: ~a~n" in-fm)
+									(recurse (cdr rules)))))))))
 	(let
 		((eval-rslt
 			 (cond
@@ -150,14 +152,26 @@
 				 ((eqv? 'quote (car in-fm))
 					(cadr in-fm))
 				 ((eqv? 'evaluate (car in-fm))
-					(evaluate-using-rules-with-fallback fallback 
+					(let* ((rules (evaluate-using-rules-with-fallback scheme-evaluate in-rules (cadr in-fm)))
+								 (fm (evaluate-using-rules-with-fallback scheme-evaluate in-rules (caddr in-fm)))
+								 (macro-failed (lambda (exp-fm)
+																 (printf "Macro eval failed: ~a~n" fm)
+																 (evaluate-using-rules-with-fallback
+																	 scheme-evaluate rules fm))))
+						(printf "Dynamic evaluate: rules=~a fm=~a~n" (cadr in-fm) in-fm)
+						(evaluate-using-rules-with-fallback
+							macro-failed rules
+							(list (list 'quote '_evaluate)
+										(list 'quote rules)
+										(list 'quote fm)))))
 				 (else
 					 (begin
+						 (printf "Standard evaluate: ~a ~a~n" in-fm in-rules)
 						 (let
 							 ((subfms (let eval-subfms ((subfms in-fm))
 													(if (null? subfms)
 														null
-														(cons (evaluate-using-rules-with-fallback fallback in-rules (car subfms))
+														(cons (evaluate-using-rules-with-fallback scheme-evaluate in-rules (car subfms))
 																	(eval-subfms (cdr subfms)))))))
 							 (resolve subfms)))))))
 		eval-rslt))
@@ -225,14 +239,15 @@
 																	 `(compile-rule (quote ,ptn)
 																									(quote ,(expression-wrapper expr)))))))
 							(else (begin
+											(printf "Evaluating top-scope: ~a~n" src)
 											(set! rslt
-											(evaluate-using-rules global-rules
-																						`('evaluate (quote ,global-rules) (quote ,src))))))))
+												(evaluate-using-rules global-rules
+																							`(evaluate (quote ,global-rules) (quote ,src))))))))
 					(if (eof-object? src)
 						rslt
 						(read-next-data))))))
 	(call-with-input-file filename load-from-port))
 
-(include-rules-from-file "src/evaluate.jest" (lambda (fm) (car fm)))
+;(include-rules-from-file "src/evaluate.jest" (lambda (fm) (car fm)))
 (include-rules-from-file "src/quasiquote.jest" (lambda (fm) (car fm)))
-(include-rules-from-file "src/scope.jest" (lambda (fm) (car fm)))
+;(include-rules-from-file "src/scope.jest" (lambda (fm) (car fm)))

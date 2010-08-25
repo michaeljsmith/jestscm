@@ -7,12 +7,13 @@
 (define ('evaluate-quasiquoted rules (expr-head . expr-tail))
 	(cons ('evaluate-quasiquoted rules expr-head) ('evaluate-quasiquoted rules expr-tail)))
 (define ('evaluate-quasiquoted rules (('unquote-splicing expr-head) . expr-tail))
-	(append ('evaluate rules expr-head) ('evaluate-quasiquoted rules expr-tail)))
+	(append (evaluate rules expr-head) ('evaluate-quasiquoted rules expr-tail)))
 (define ('evaluate-quasiquoted rules ('unquote expr))
-	('evaluate rules expr))
+	(evaluate rules expr))
 
 (define ('_evaluate rules ('quasiquote expr))
 	('evaluate-quasiquoted rules expr))
 
-;(define 'c '(44))
-;`(a ,@c b ,@c)
+(define 'c '(44))
+`(a ,@c b ,@c)
+;`(a b ,c)
