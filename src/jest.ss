@@ -56,7 +56,7 @@
 									((list? ls) (cons `(quote ,(car ls)) (quote-list (cdr ls))))
 									(else ls))))
 						fm)))
-		(printf "evaluate-builtin: ~a~n" fm)
+		;(printf "evaluate-builtin: ~a~n" fm)
 		(eval quoted-list eval-ns)))
 
 (define evaluate-builtin scheme-evaluate)
@@ -155,10 +155,10 @@
 					(let* ((rules (evaluate-using-rules-with-fallback scheme-evaluate in-rules (cadr in-fm)))
 								 (fm (evaluate-using-rules-with-fallback scheme-evaluate in-rules (caddr in-fm)))
 								 (macro-failed (lambda (exp-fm)
-																 (printf "Macro eval failed: ~a~n" fm)
+																 ;(printf "Macro eval failed: ~a~n" fm)
 																 (evaluate-using-rules-with-fallback
 																	 scheme-evaluate rules fm))))
-						(printf "Dynamic evaluate: rules=~a fm=~a~n" (cadr in-fm) in-fm)
+						;(printf "Dynamic evaluate: rules=~a fm=~a~n" (cadr in-fm) in-fm)
 						(evaluate-using-rules-with-fallback
 							macro-failed rules
 							(list (list 'quote '_evaluate)
@@ -166,7 +166,7 @@
 										(list 'quote fm)))))
 				 (else
 					 (begin
-						 (printf "Standard evaluate: ~a ~a~n" in-fm in-rules)
+						 ;(printf "Standard evaluate: ~a ~a~n" in-fm in-rules)
 						 (let
 							 ((subfms (let eval-subfms ((subfms in-fm))
 													(if (null? subfms)
@@ -239,7 +239,7 @@
 																	 `(compile-rule (quote ,ptn)
 																									(quote ,(expression-wrapper expr)))))))
 							(else (begin
-											(printf "Evaluating top-scope: ~a~n" src)
+											;(printf "Evaluating top-scope: ~a~n" src)
 											(set! rslt
 												(evaluate-using-rules global-rules
 																							`(evaluate (quote ,global-rules) (quote ,src))))))))
@@ -250,4 +250,4 @@
 
 ;(include-rules-from-file "src/evaluate.jest" (lambda (fm) (car fm)))
 (include-rules-from-file "src/quasiquote.jest" (lambda (fm) (car fm)))
-;(include-rules-from-file "src/scope.jest" (lambda (fm) (car fm)))
+(include-rules-from-file "src/scope.jest" (lambda (fm) (car fm)))

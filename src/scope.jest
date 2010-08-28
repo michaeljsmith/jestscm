@@ -1,3 +1,5 @@
+(define ('second a b) b)
+
 (define ('_evaluate rules ('scope . clauses))
 	('second
 	 (printf "evaluate scope: ~a~n" clauses)
@@ -19,8 +21,8 @@
 (define ('evaluate-scope-clause scope-sym rules clause)
 	;('evaluate (cons `((var ,scope-sym) ,rules) rules) clause))
 	('second
-	 (printf "evaluate-scope-clause rules ~a~n" rules)
-	 ('evaluate (cons (list (list 'const scope-sym) rules) rules) clause)))
+	 (printf "evaluate-scope-clause rules=~a~n" rules)
+	 (evaluate (cons (list (list 'const scope-sym) rules) rules) clause)))
 
 (define ('compile-scope-rule scope-sym ptn expr)
 	;('second
@@ -43,3 +45,8 @@
 ;	x)
 
 ;('compile-scope-rule 'sam 'x 5)
+;`(a b ,(cons 'b 'c))
+(scope
+	(define 'a 3)
+	a)
+
