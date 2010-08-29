@@ -23,11 +23,59 @@
 	 (printf "evaluate-scope-clause rules=~a~n" rules)
 	 (evaluate (cons (list (list 'const scope-sym) (list 'quote rules)) rules) clause)))
 
+;(define 'extract-bindings-from-pattern 'extract-bindings-from-pattern)
+;(define ('extract-bindings-from-pattern ptn)
+;	(list ptn))
+;
+;(define ('extract-bindings-from-pattern ())
+;	'())
+;
+;(define ('extract-bindings-from-pattern (hd . tl))
+;	(append
+;		 (extract-bindings-from-pattern hd)
+;		 (extract-bindings-from-pattern tl))) ; Might cause duplicates, but shouldn't matter.
+;
+;(define ('extract-bindings-from-pattern ''name)
+;	'())
+
+;(define 'extract-bindings-from-pattern 'extract-bindings-from-pattern)
+
+(define ('extract-bindings-from-pattern ('const val))
+	'())
+(define ('extract-bindings-from-pattern ('var name))
+	(list name))
+(define ('extract-bindings-from-pattern ('fm (head . tail)))
+	(append
+		('extract-bindings-from-pattern head)
+		('extract-bindings-from-pattern tail))) ; Might cause duplicates, but shouldn't mattern.
+(define ('extract-bindings-from-pattern ('fm ()))
+	'())
+
+(define 'generate-binding-code-from-bindings 'generate-binding-code-from-bindings)
+(define ('generate-binding-code-from-bindings (bdng . bdng-tl) generate-lexical-rules)
+	(list 'cons
+				 (list 'list (list 'list ''const (list 'quote bdng)) (list 'evaluate 'rules bdng))
+				 (generate-binding-code-from-bindings bdng-tl generate-lexical-rules)))
+(define ('generate-binding-code-from-bindings () generate-lexical-rules)
+	generate-lexical-rules)
+
+(define 'generate-binding-code-from-pattern 'generate-binding-code-from-pattern)
+(define ('generate-binding-code-from-pattern ptn generate-lexical-rules)
+	('second
+	 (printf "extracted bindings: ~a (ptn=~a)~n" ('extract-bindings-from-pattern ptn) ptn)
+	 (generate-binding-code-from-bindings ('extract-bindings-from-pattern ptn) generate-lexical-rules)))
+
 (define ('compile-scope-rule scope-sym ptn expr)
 	('second
-	 (printf "compiled rule: sym ~a~n" scope-sym)
+	 (printf "compiled rule: sym ~a~n  binding code: ~a~n"
+					 scope-sym
+					 ('generate-binding-code-from-pattern
+						('compile-pattern ptn) scope-sym))
 		(list ('compile-pattern (list ''_evaluate 'rules ptn))
-					(list 'evaluate scope-sym (list 'quote expr)))))
+					(list
+						'evaluate
+						('generate-binding-code-from-pattern ('compile-pattern ptn) scope-sym)
+						(list 'quote expr)))))
 
 ;(scope (printf "hello~n"))
 ;(scope 1)
@@ -45,5 +93,5 @@
 
 (scope
 	(define ('foo x)
-		(+ 1 9))
+		(+ x 9))
 	(foo 2))
