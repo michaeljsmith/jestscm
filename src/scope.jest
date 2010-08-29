@@ -19,23 +19,15 @@
 	last-rslt)
 
 (define ('evaluate-scope-clause scope-sym rules clause)
-	;('evaluate (cons `((var ,scope-sym) ,rules) rules) clause))
 	('second
 	 (printf "evaluate-scope-clause rules=~a~n" rules)
-	 (evaluate (cons (list (list 'const scope-sym) rules) rules) clause)))
+	 (evaluate (cons (list (list 'const scope-sym) (list 'quote rules)) rules) clause)))
 
 (define ('compile-scope-rule scope-sym ptn expr)
-	;('second
-	;	(printf "compiled rule: ~a~n" (list ('compile-pattern `('evaluate rules ,ptn))
-	;								`('evaluate ,scope-sym expr)))
-	;	(list ('compile-pattern `('evaluate rules ,ptn))
-	;			`('evaluate ,scope-sym expr))))
 	('second
 	 (printf "compiled rule: sym ~a~n" scope-sym)
-	; (list ('compiled-pattern (list ''evaluate 'rules ptn))
-	;				(list ''evaluate scope-sym 'expr))))
 		(list ('compile-pattern (list ''_evaluate 'rules ptn))
-					(list ''evaluate scope-sym expr))))
+					(list 'evaluate scope-sym (list 'quote expr)))))
 
 ;(scope (printf "hello~n"))
 ;(scope 1)
@@ -46,7 +38,12 @@
 
 ;('compile-scope-rule 'sam 'x 5)
 ;`(a b ,(cons 'b 'c))
-(scope
-	(define 'a 3)
-	a)
 
+;(scope
+;	(define 'a 'b)
+;	a)
+
+(scope
+	(define ('foo x)
+		(+ 1 9))
+	(foo 2))

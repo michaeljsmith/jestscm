@@ -145,6 +145,7 @@
 								(if match-scs
 									(bind-and-evaluate (cadr match-rslt) rule-expr)
 									(recurse (cdr rules)))))))))
+	(printf "evaluating: fm=~a rules=~a~n" in-fm in-rules)
 	(let
 		((eval-rslt
 			 (cond
@@ -158,7 +159,7 @@
 																 ;(printf "Macro eval failed: ~a~n" fm)
 																 (evaluate-using-rules-with-fallback
 																	 scheme-evaluate rules fm))))
-						;(printf "Dynamic evaluate: rules=~a fm=~a~n" (cadr in-fm) in-fm)
+						(printf "Dynamic evaluate: rules=~a fm=~a~n" rules fm)
 						(evaluate-using-rules-with-fallback
 							macro-failed rules
 							(list (list 'quote '_evaluate)
