@@ -38,18 +38,26 @@
 	'())
 
 (define 'generate-binding-code-from-bindings 'generate-binding-code-from-bindings)
-(define ('generate-binding-code-from-bindings (bdng . bdng-tl) generate-lexical-rules)
+(define ('generate-binding-code-from-bindings (bdng . bdng-tl) scope-sym)
 	(list 'cons
 				 (list 'list (list 'list ''const (list 'quote bdng)) (list 'evaluate '_current-rules bdng))
-				 (generate-binding-code-from-bindings bdng-tl generate-lexical-rules)))
-(define ('generate-binding-code-from-bindings () generate-lexical-rules)
-	generate-lexical-rules)
+				 (generate-binding-code-from-bindings bdng-tl scope-sym)))
+(define ('generate-binding-code-from-bindings () scope-sym)
+	scope-sym)
 
 (define 'generate-binding-code-from-pattern 'generate-binding-code-from-pattern)
-(define ('generate-binding-code-from-pattern ptn generate-lexical-rules)
+(define ('generate-binding-code-from-pattern ptn scope-sym)
 	('second
-	 (printf "extracted bindings: ~a (ptn=~a)~n" ('extract-bindings-from-pattern ptn) ptn)
-	 (generate-binding-code-from-bindings ('extract-bindings-from-pattern ptn) generate-lexical-rules)))
+	 (printf "extracted bindings: ~a~n"
+	 (list 'cons
+				 (list 'list (list 'list ''const (list 'quote scope-sym))
+							 ;(list 'list ''quote (list 'evaluate '_current-rules scope-sym)))
+							 (list 'list ''quote scope-sym))
+				 (generate-binding-code-from-bindings ('extract-bindings-from-pattern ptn) scope-sym)))
+	 (list 'cons
+				 (list 'list (list 'list ''const (list 'quote scope-sym))
+							 (list 'list ''quote scope-sym))
+				 (generate-binding-code-from-bindings ('extract-bindings-from-pattern ptn) scope-sym))))
 
 (define ('compile-scope-rule scope-sym ptn expr)
 	('second
@@ -73,10 +81,27 @@
 ;('compile-scope-rule 'sam 'x 5)
 ;`(a b ,(cons 'b 'c))
 
-(scope
-	(define ('foo x)
-		(+ x 9))
-	('foo 2))
+;(scope
+;	(define ('foo x)
+;		(+ x 9))
+;	('foo 2))
 
 ;(printf "~a" _current-rules)
 ;_current-rules
+
+;(scope
+;	(define ('foo x)
+;		(scope
+;			(define 'z 3)
+;			(+ x z)))
+;	(define ('bar y)
+;		('foo y))
+;	('bar 4))
+(scope
+	(define ('foo x) (+ x 4))
+	(define ('bar y)
+		(scope
+			(define ('bat z)
+				('foo z))
+			('bat y)))
+	('bar 8))
