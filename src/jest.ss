@@ -3,7 +3,7 @@
 ;--------------------------------------------------------------------------------
 ;
 ;  Tested under:
-;  MzScheme v4.1.5 (Ubuntu Linux 10.04)
+;  MzScheme v4.2.1
 ;
 ;
 ;  Copyright (c) 2010 Michael Smith <msmith@msmith.id.au>
@@ -28,12 +28,6 @@
 ;  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS:wa
 ;  IN THE SOFTWARE.
 ;
-;--------------------------------------------------------------------------------
-
-;--------------------------------------------------------------------------------
-; TODO:
-; * Auto defining operators.
-; * 
 ;--------------------------------------------------------------------------------
 
 #lang scheme
@@ -70,9 +64,10 @@
 ; to be compiled.
 ; Note that this evaluation scheme is very simply implemented, and in particular
 ; scoping is dynamic. Lexical scoping is implemented at a higher level.
-(define (evaluate-using-rules-with-fallback fallback in-rules in-fm)
-	(define (resolve fm)
-		(let recurse ((rules in-rules))
+(define (evaluate-using-rules orig-rules orig-fm)
+
+	(define (resolve fm fallback)
+		(let recurse ((rules orig-rules))
 			(define (match-const val fm)
 				(cond
 					((pair? fm) '(#f))
@@ -124,63 +119,73 @@
 				(let ((new-rules
 								(let bind ((bs bdngs))
 									(if (null? bs)
-										in-rules
+										orig-rules
 										(cons
 											(let* ((bdng (car bs))
 														 (name (car bdng))
 														 (value (cadr bdng)))
 												(list (list 'const name) (list 'quote value)))
 											(bind (cdr bs)))))))
-					(evaluate-using-rules-with-fallback scheme-evaluate new-rules fm)))
+					(evaluate-using-rules new-rules fm)))
 			(cond
 				((null? rules)
 				 (apply fallback (list fm)))
 				(else
 					(begin
 						(let* ((rule (car rules))
-										 (rule-ptn (car rule))
-										 (rule-expr (cadr rule))
-										 (match-rslt (match-ptn rule-ptn fm))
-										 (match-scs (car match-rslt)))
-								(if match-scs
-									(bind-and-evaluate (cadr match-rslt) rule-expr)
-									(recurse (cdr rules)))))))))
-	(printf "evaluating: fm=~a rules=~a~n" in-fm in-rules)
+									 (rule-ptn (car rule))
+									 (rule-expr (cadr rule))
+									 (match-rslt (match-ptn rule-ptn fm))
+									 (match-scs (car match-rslt)))
+							(if match-scs
+								(bind-and-evaluate (cadr match-rslt) rule-expr)
+								(recurse (cdr rules)))))))))
+
+	(define (evaluate-using-rules-with-fallback fallback in-rules in-fm)
+		(let
+			((eval-rslt
+				 (cond
+					 ((not (list? in-fm)) (resolve in-fm fallback))
+					 ((eqv? 'quote (car in-fm))
+						(cadr in-fm))
+					 ((eqv? 'evaluate (car in-fm))
+						(let* ((rules (evaluate-using-rules-with-fallback scheme-evaluate in-rules (cadr in-fm)))
+									 (fm (evaluate-using-rules-with-fallback scheme-evaluate in-rules (caddr in-fm))))
+							(printf "Dynamic evaluate (old): rules=~a fm=~a~n" rules fm)
+							(evaluate-using-rules rules fm)))
+					 (else
+						 (begin
+							 ;(printf "Standard evaluate: ~a ~a~n" in-fm in-rules)
+							 (let
+								 ((subfms (let eval-subfms ((subfms in-fm))
+														(if (null? subfms)
+															null
+															(cons (evaluate-using-rules in-rules (car subfms))
+																		(eval-subfms (cdr subfms)))))))
+								 (resolve subfms fallback)))))))
+			eval-rslt))
+
+	(define (macro-failed exp-fm)
+		(evaluate-using-rules-with-fallback scheme-evaluate orig-rules orig-fm))
 	(let
 		((eval-rslt
-			 (cond
-				 ((not (list? in-fm)) (resolve in-fm))
-				 ((eqv? 'quote (car in-fm))
-					(cadr in-fm))
-				 ((eqv? 'evaluate (car in-fm))
-					(let* ((rules (evaluate-using-rules-with-fallback scheme-evaluate in-rules (cadr in-fm)))
-								 (fm (evaluate-using-rules-with-fallback scheme-evaluate in-rules (caddr in-fm)))
-								 (macro-failed (lambda (exp-fm)
-																 ;(printf "Macro eval failed: ~a~n" fm)
-																 (evaluate-using-rules-with-fallback
-																	 scheme-evaluate rules fm))))
-						(printf "Dynamic evaluate: rules=~a fm=~a~n" rules fm)
-						(evaluate-using-rules-with-fallback
-							macro-failed rules
-							(list (list 'quote '_evaluate)
-										(list 'quote rules)
-										(list 'quote fm)))))
-				 (else
-					 (begin
-						 ;(printf "Standard evaluate: ~a ~a~n" in-fm in-rules)
-						 (let
-							 ((subfms (let eval-subfms ((subfms in-fm))
-													(if (null? subfms)
-														null
-														(cons (evaluate-using-rules-with-fallback scheme-evaluate in-rules (car subfms))
-																	(eval-subfms (cdr subfms)))))))
-							 (resolve subfms)))))))
+			 (begin
+				 (printf "evaluating: fm=~a rules=~a~n" orig-fm orig-rules)
+				 (cond
+					 ((and (list? orig-fm) (eqv? 'quote (car orig-fm)))
+						(cadr orig-fm))
+					 ((and (list? orig-fm) (eqv? 'evaluate (car orig-fm)))
+						(let* ((rules (evaluate-using-rules orig-rules
+																															(cadr orig-fm)))
+									 (fm (evaluate-using-rules orig-rules (caddr orig-fm))))
+							(printf "Dynamic evaluate: rules=~a fm=~a~n" rules fm)
+							(evaluate-using-rules rules fm)))
+					 (else
+						 (begin
+							 (printf "Standard evaluate: ~a ~a~n" orig-fm orig-rules)
+							 (resolve (list  '_evaluate orig-rules orig-fm) macro-failed)))))))
 		eval-rslt))
 
-; Wrapper for the above evaluation function which uses standard scheme eval()
-; to handle fallback cases.
-(define (evaluate-using-rules rules fm)
-	(evaluate-using-rules-with-fallback scheme-evaluate rules fm))
 (define (push-base-rule rl)
 	(set! base-rules (cons rl base-rules)))
 
