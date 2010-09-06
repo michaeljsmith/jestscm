@@ -1,0 +1,41 @@
+(define ('_evaluate rules ('module . clauses))
+	('second
+	 (printf "evaluate module ~a~n" clauses)
+	 ('evaluate-module-clauses (gensym 'module) rules clauses '())))
+
+(define ('evaluate-module-clauses scope-sym rules (clause-head . clause-tail) exports)
+	('second
+	 (printf "evaluate-module-clauses sym: ~a head: ~a~n" scope-sym clause-head)
+	 ('second
+		('evaluate-module-clause scope-sym rules clause-head)
+		('evaluate-module-clauses scope-sym rules clause-tail exports))))
+(define ('evaluate-module-clauses scope-sym rules (('define ptn expr) . clause-tail) exports)
+	('second
+	 (printf "evaluate-module-clauses define sym: ~a ptn ~a expr ~a~n" scope-sym ptn expr)
+	 ('evaluate-module-clauses scope-sym
+		(cons ('compile-scope-rule scope-sym ptn expr) rules) clause-tail exports)))
+(define ('evaluate-module-clauses scope-sym rules (('export ptn expr) . clause-tail) exports)
+		('second
+		 	 (printf "evaluate-module-clauses export sym: ~a ptn ~a expr ~a~n" scope-sym ptn expr)
+			 (scope
+				 (define 'compiled-rule ('compile-scope-rule scope-sym ptn expr))
+			 	 ('evaluate-module-clauses scope-sym
+							(cons compiled-rule rules) clause-tail
+							(cons compiled-rule exports)))))
+(define ('evaluate-module-clauses scope-sym rules () exports)
+	exports)
+
+(define ('evaluate-module-clause scope-sym rules clause)
+	('second
+	 (printf "evaluate-module-clause rules=~a~n" rules)
+	 (evaluate (cons (list (list 'const scope-sym) (list 'quote rules)) rules) clause)))
+
+(module
+	(export ('charlie x) (+ x 2))
+	(define ('foo x) (+ x 4))
+	(define ('bar y)
+		(scope
+			(define ('bat z)
+				('foo z))
+			('bat y)))
+	('bar 8))

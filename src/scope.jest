@@ -97,11 +97,12 @@
 ;	(define ('bar y)
 ;		('foo y))
 ;	('bar 4))
-(scope
-	(define ('foo x) (+ x 4))
-	(define ('bar y)
-		(scope
-			(define ('bat z)
-				('foo z))
-			('bat y)))
-	('bar 8))
+
+;(scope
+;	(define ('foo x) (+ x 4))
+;	(define ('bar y)
+;		(scope
+;			(define ('bat z)
+;				('foo z))
+;			('bat y)))
+;	('bar 8))
