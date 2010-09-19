@@ -6,20 +6,22 @@
 (define ('_evaluate rules ('scope . clauses))
 	('evaluate-scope-clauses (gensym 'scope) rules clauses (void)))
 
-(define ('evaluate-scope-clauses-process-result scope-sym clause-tail (rules . rslt))
-	('evaluate-scope-clauses scope-sym rules clause-tail rslt))
-
 (define ('evaluate-scope-clauses scope-sym rules (clause-head . clause-tail) last-rslt)
-	('evaluate-scope-clauses scope-sym rules clause-tail
-	 ('evaluate-scope-clauses-process-result scope-sym clause-tail ('evaluate-scope-clause scope-sym rules clause-head))))
-(define ('evaluate-scope-clauses scope-sym rules (('define ptn expr) . clause-tail) last-rslt)
-	('evaluate-scope-clauses scope-sym
-		(cons ('compile-scope-rule scope-sym ptn expr) rules) clause-tail last-rslt))
+	('evaluate-scope-clauses-process-result clause-head rules scope-sym clause-tail
+		('evaluate-scope-clause scope-sym rules clause-head)))
 (define ('evaluate-scope-clauses scope-sym rules () last-rslt)
 	last-rslt)
 
+(define ('evaluate-scope-clauses-process-result expr old-rules scope-sym clause-tail (rules . rslt))
+	('evaluate-scope-clauses scope-sym rules clause-tail rslt))
+
 (define ('evaluate-scope-clause scope-sym rules clause)
 	(cons rules (evaluate (cons (list (list 'const scope-sym) (list 'quote rules)) rules) clause)))
+(define ('evaluate-scope-clause scope-sym rules ('define ptn expr))
+	(cons
+			; Add new rule.
+			(cons ('compile-scope-rule scope-sym ptn expr) rules)
+			(void)))
 
 (define ('extract-bindings-from-pattern ('const val))
 	'())
@@ -81,11 +83,11 @@
 ;		('foo y))
 ;	('bar 4))
 
-(scope
-	(define ('foo x) (+ x 4))
-	(define ('bar y)
-		(scope
-			(define ('bat z)
-				('foo z))
-			('bat y)))
-	('bar 8))
+;(scope
+;	(define ('foo x) (+ x 4))
+;	(define ('bar y)
+;		(scope
+;			(define ('bat z)
+;				('foo z))
+;			('bat y)))
+;	('bar 8))

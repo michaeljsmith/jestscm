@@ -151,7 +151,7 @@
 					 ((eqv? 'evaluate (car in-fm))
 						(let* ((rules (evaluate-using-rules-with-fallback scheme-evaluate in-rules (cadr in-fm)))
 									 (fm (evaluate-using-rules-with-fallback scheme-evaluate in-rules (caddr in-fm))))
-							(printf "Dynamic evaluate (old): rules=~a fm=~a~n" rules fm)
+							;(printf "Dynamic evaluate (old): rules=~a fm=~a~n" rules fm)
 							(evaluate-using-rules rules fm)))
 					 (else
 						 (begin
@@ -170,7 +170,7 @@
 	(let
 		((eval-rslt
 			 (begin
-				 (printf "evaluating: fm=~a rules=~a~n" orig-fm orig-rules)
+				 ;(printf "evaluating: fm=~a rules=~a~n" orig-fm orig-rules)
 				 (cond
 					 ((and (list? orig-fm) (eqv? 'quote (car orig-fm)))
 						(cadr orig-fm))
@@ -178,11 +178,11 @@
 						(let* ((rules (evaluate-using-rules orig-rules
 																															(cadr orig-fm)))
 									 (fm (evaluate-using-rules orig-rules (caddr orig-fm))))
-							(printf "Dynamic evaluate: rules=~a fm=~a~n" rules fm)
+							;(printf "Dynamic evaluate: rules=~a fm=~a~n" rules fm)
 							(evaluate-using-rules rules fm)))
 					 (else
 						 (begin
-							 (printf "Standard evaluate: ~a ~a~n" orig-fm orig-rules)
+							 ;(printf "Standard evaluate: ~a ~a~n" orig-fm orig-rules)
 							 (resolve (list  '_evaluate orig-rules orig-fm) macro-failed)))))))
 		eval-rslt))
 
