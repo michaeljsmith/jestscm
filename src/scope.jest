@@ -4,27 +4,22 @@
 	rules)
 
 (define ('_evaluate rules ('scope . clauses))
-	('second
-	 (printf "evaluate scope: ~a~n" clauses)
-	 ('evaluate-scope-clauses (gensym 'scope) rules clauses (void))))
+	('evaluate-scope-clauses (gensym 'scope) rules clauses (void)))
+
+(define ('evaluate-scope-clauses-process-result scope-sym clause-tail (rules . rslt))
+	('evaluate-scope-clauses scope-sym rules clause-tail rslt))
 
 (define ('evaluate-scope-clauses scope-sym rules (clause-head . clause-tail) last-rslt)
-	('second
-	 (printf "evaluate-scope-clauses sym: ~a head: ~a~n" scope-sym clause-head)
-		('evaluate-scope-clauses scope-sym rules clause-tail
-	 ('evaluate-scope-clause scope-sym rules clause-head))))
+	('evaluate-scope-clauses scope-sym rules clause-tail
+	 ('evaluate-scope-clauses-process-result scope-sym clause-tail ('evaluate-scope-clause scope-sym rules clause-head))))
 (define ('evaluate-scope-clauses scope-sym rules (('define ptn expr) . clause-tail) last-rslt)
-	('second
-	 (printf "evaluate-scope-clauses define sym: ~a ptn ~a expr ~a~n" scope-sym ptn expr)
-	 ('evaluate-scope-clauses scope-sym
-		(cons ('compile-scope-rule scope-sym ptn expr) rules) clause-tail last-rslt)))
+	('evaluate-scope-clauses scope-sym
+		(cons ('compile-scope-rule scope-sym ptn expr) rules) clause-tail last-rslt))
 (define ('evaluate-scope-clauses scope-sym rules () last-rslt)
 	last-rslt)
 
 (define ('evaluate-scope-clause scope-sym rules clause)
-	('second
-	 (printf "evaluate-scope-clause rules=~a~n" rules)
-	 (evaluate (cons (list (list 'const scope-sym) (list 'quote rules)) rules) clause)))
+	(cons rules (evaluate (cons (list (list 'const scope-sym) (list 'quote rules)) rules) clause)))
 
 (define ('extract-bindings-from-pattern ('const val))
 	'())
@@ -47,29 +42,17 @@
 
 (define 'generate-binding-code-from-pattern 'generate-binding-code-from-pattern)
 (define ('generate-binding-code-from-pattern ptn scope-sym)
-	('second
-	 (printf "extracted bindings: ~a~n"
-	 (list 'cons
-				 (list 'list (list 'list ''const (list 'quote scope-sym))
-							 ;(list 'list ''quote (list 'evaluate '_current-rules scope-sym)))
-							 (list 'list ''quote scope-sym))
-				 (generate-binding-code-from-bindings ('extract-bindings-from-pattern ptn) scope-sym)))
-	 (list 'cons
-				 (list 'list (list 'list ''const (list 'quote scope-sym))
-							 (list 'list ''quote scope-sym))
-				 (generate-binding-code-from-bindings ('extract-bindings-from-pattern ptn) scope-sym))))
+	(list 'cons
+				(list 'list (list 'list ''const (list 'quote scope-sym))
+							(list 'list ''quote scope-sym))
+				(generate-binding-code-from-bindings ('extract-bindings-from-pattern ptn) scope-sym)))
 
 (define ('compile-scope-rule scope-sym ptn expr)
-	('second
-	 (printf "compiled rule: sym ~a~n  binding code: ~a~n"
-					 scope-sym
-					 ('generate-binding-code-from-pattern
-						('compile-pattern ptn) scope-sym))
-		(list ('compile-pattern ptn)
-					(list
-						'evaluate
-						('generate-binding-code-from-pattern ('compile-pattern ptn) scope-sym)
-						(list 'quote expr)))))
+	(list ('compile-pattern ptn)
+				(list
+					'evaluate
+					('generate-binding-code-from-pattern ('compile-pattern ptn) scope-sym)
+					(list 'quote expr))))
 
 ;(scope (printf "hello~n"))
 ;(scope 1)
@@ -98,11 +81,11 @@
 ;		('foo y))
 ;	('bar 4))
 
-;(scope
-;	(define ('foo x) (+ x 4))
-;	(define ('bar y)
-;		(scope
-;			(define ('bat z)
-;				('foo z))
-;			('bat y)))
-;	('bar 8))
+(scope
+	(define ('foo x) (+ x 4))
+	(define ('bar y)
+		(scope
+			(define ('bat z)
+				('foo z))
+			('bat y)))
+	('bar 8))
