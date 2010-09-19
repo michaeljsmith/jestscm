@@ -7,12 +7,12 @@
 	('evaluate-scope-clauses (gensym 'scope) rules clauses (void)))
 
 (define ('evaluate-scope-clauses scope-sym rules (clause-head . clause-tail) last-rslt)
-	('evaluate-scope-clauses-process-result clause-head rules scope-sym clause-tail
+	('evaluate-scope-clauses-process-result scope-sym clause-tail
 		('evaluate-scope-clause scope-sym rules clause-head)))
 (define ('evaluate-scope-clauses scope-sym rules () last-rslt)
 	last-rslt)
 
-(define ('evaluate-scope-clauses-process-result expr old-rules scope-sym clause-tail (rules . rslt))
+(define ('evaluate-scope-clauses-process-result scope-sym clause-tail (rules . rslt))
 	('evaluate-scope-clauses scope-sym rules clause-tail rslt))
 
 (define ('evaluate-scope-clause scope-sym rules clause)
