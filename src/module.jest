@@ -48,14 +48,23 @@
 	 ('evaluate-module-export-symbol-clause-process-result scope-sym rules symbol
 		(evaluate rules expr) exports symbols)))
 
+(define (('module bdngs) symbol)
+	('lookup-module-binding bdngs symbol))
+
+(define ('lookup-module-binding (bdng-head . bdng-tail) symbol)
+	('lookup-module-binding bdng-tail symbol))
+(define ('lookup-module-binding () symbol)
+	(ERROR-UNKNOWN-MODULE-BINDING))
+(define ('lookup-module-binding ((symbol value) . bdng-tail) symbol)
+	value)
+
 (scope
 	(module stuff
 		(define ('bar y) (+ y 5))
 		(export 'foo 'foo)
 		(export (,foo x) ('bar x))
 		(printf "~a~n" ('foo 3)))
-	('foo 5)
-	stuff)
+	((stuff 'foo) 5))
 
 ;(define ('compile-pattern rules ('unquote expr))
 ;	(list 'const (evaluate rules expr)))
