@@ -217,14 +217,16 @@
 																 . (fm ((fm (
 																				(const quote) .
 																				(fm ((var x) . (fm ()))))) . (fm ()))))) . (fm ())))))))
-									(list 'fm (cons (list 'const 'quote) (list 'var x)))))
-(push-base-rule '((fm ((const compile-rule) . (fm ((var rules) . (fm ((var ptn) . (fm ((var expr) .
-																(fm ())))))))))
-									(list (compile-pattern rules ptn) expr)))
+									(list 'fm (cons (list 'const 'quote) (list 'fm (cons (list 'var x)
+																																			 (list 'fm '())))))))
 
 (push-base-rule '((fm ((const compile-pattern) fm ((var rules)
 																				 fm ((fm ((const unquote) fm ((var expr) fm ()))) fm ()))))
 									(list (quote const) (evaluate rules expr))))
+
+(push-base-rule '((fm ((const compile-rule) . (fm ((var rules) . (fm ((var ptn) . (fm ((var expr) .
+																(fm ())))))))))
+									(list (compile-pattern rules ptn) expr)))
 
 (define global-rules base-rules)
 (define (push-global-rule rl)

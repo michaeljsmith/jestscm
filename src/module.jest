@@ -1,39 +1,61 @@
-(define ('evaluate-scope-clause scope-sym rules ('module . clauses))
-	('evaluate-module-clauses (gensym 'module) rules clauses rules '()))
+(define ('evaluate-scope-clause scope-sym rules ('module name . clauses))
+	('evaluate-module-clauses name (gensym 'module) rules clauses rules '()))
 
-(define ('evaluate-module-clauses scope-sym rules (clause-head . clause-tail) exports symbols)
-	('evaluate-module-clauses-process-result scope-sym clause-tail
+(define ('evaluate-module-clauses module-name scope-sym rules (clause-head . clause-tail) exports symbols)
+	('evaluate-module-clauses-process-result module-name scope-sym clause-tail
 		('evaluate-module-clause scope-sym rules clause-head exports symbols)))
-(define ('evaluate-module-clauses scope-sym rules () exports symbols)
-	(cons
-		(cons (list (list 'const scope-sym) (list 'quote rules)) exports) symbols))
+(define ('evaluate-module-clauses module-name scope-sym rules () exports symbols)
+	('second
+	 (printf "symbols=~a~n" symbols)
+	 ('evaluate-module-clauses-process-final-result module-name scope-sym rules exports
+		(list 'module symbols))))
 
-(define ('evaluate-module-clauses-process-result scope-sym clause-tail (rules exports . symbols))
-	('evaluate-module-clauses scope-sym rules clause-tail exports symbols))
+(define ('evaluate-module-clauses-process-result module-name scope-sym clause-tail (rules exports . symbols))
+	('evaluate-module-clauses module-name scope-sym rules clause-tail exports symbols))
+
+(define ('evaluate-module-clauses-process-final-result module-name scope-sym rules exports module)
+	(cons
+		(cons (list (list 'const module-name) (list 'quote module))
+					(cons (list (list 'const scope-sym) (list 'quote rules)) exports))
+		module))
 
 (define ('evaluate-module-scope-clause-process-result scope-sym (rules . rslt) exports symbols)
 	(cons rules (cons exports symbols)))
 (define ('evaluate-module-clause scope-sym rules clause exports symbols)
 	('evaluate-module-scope-clause-process-result scope-sym
 	 ('evaluate-scope-clause scope-sym rules clause) exports symbols))
-(define ('evaluate-module-export-form-clause-process-result scope-sym rules compiled-rule exports symbols)
+(define ('evaluate-module-export-form-clause-process-result scope-sym rules
+				 compiled-rule exports symbols)
 	(cons
 		(cons compiled-rule rules)
 		(cons
 			(cons compiled-rule exports)
 			symbols)))
+(define ('evaluate-module-export-symbol-clause-process-result scope-sym rules
+				 symbol value exports symbols)
+	(cons
+		(cons (list (list 'const symbol) (list 'quote value)) rules)
+		(cons
+			exports
+			(cons (list symbol value) symbols))))
 (define ('evaluate-module-clause scope-sym rules ('export ptn expr) exports symbols)
 	('evaluate-module-export-form-clause-process-result scope-sym rules
 	 ('compile-scope-rule scope-sym
 		(cons (list (list 'const scope-sym) (list 'quote rules)) rules) ptn expr) exports symbols))
+(define ('evaluate-module-clause scope-sym rules ('export ''symbol expr) exports symbols)
+	('second
+	 (printf "Export symbol ~a~n" symbol)
+	 ('evaluate-module-export-symbol-clause-process-result scope-sym rules symbol
+		(evaluate rules expr) exports symbols)))
 
 (scope
-	(module
+	(module stuff
 		(define ('bar y) (+ y 5))
 		(export 'foo 'foo)
 		(export (,foo x) ('bar x))
 		(printf "~a~n" ('foo 3)))
-	('bar 5))
+	('foo 5)
+	stuff)
 
 ;(define ('compile-pattern rules ('unquote expr))
 ;	(list 'const (evaluate rules expr)))
