@@ -1,12 +1,12 @@
 (define ('evaluate-scope-clause scope-sym rules ('module . clauses))
-	('evaluate-module-clauses (gensym 'module) rules clauses '() '()))
+	('evaluate-module-clauses (gensym 'module) rules clauses rules '()))
 
 (define ('evaluate-module-clauses scope-sym rules (clause-head . clause-tail) exports symbols)
 	('evaluate-module-clauses-process-result scope-sym clause-tail
 		('evaluate-module-clause scope-sym rules clause-head exports symbols)))
 (define ('evaluate-module-clauses scope-sym rules () exports symbols)
 	(cons
-		(cons (list (list 'const scope-sym) (list 'quote rules)) rules) (cons exports symbols)))
+		(cons (list (list 'const scope-sym) (list 'quote rules)) exports) symbols))
 
 (define ('evaluate-module-clauses-process-result scope-sym clause-tail (rules exports . symbols))
 	('evaluate-module-clauses scope-sym rules clause-tail exports symbols))
@@ -29,10 +29,11 @@
 
 (scope
 	(module
+		(define ('bar y) (+ y 5))
 		(export 'foo 'foo)
-		(export (,foo x) (+ 2 x))
+		(export (,foo x) ('bar x))
 		(printf "~a~n" ('foo 3)))
-	('foo 5))
+	('bar 5))
 
 ;(define ('compile-pattern rules ('unquote expr))
 ;	(list 'const (evaluate rules expr)))
