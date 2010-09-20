@@ -1,29 +1,31 @@
 (define ('evaluate-scope-clause scope-sym rules ('module . clauses))
-	('evaluate-module-clauses (gensym 'module) rules clauses '()))
+	('evaluate-module-clauses (gensym 'module) rules clauses '() '()))
 
-(define ('evaluate-module-clauses scope-sym rules (clause-head . clause-tail) exports)
+(define ('evaluate-module-clauses scope-sym rules (clause-head . clause-tail) exports symbols)
 	('evaluate-module-clauses-process-result scope-sym clause-tail
-		('evaluate-module-clause scope-sym rules clause-head exports)))
-(define ('evaluate-module-clauses scope-sym rules () exports)
+		('evaluate-module-clause scope-sym rules clause-head exports symbols)))
+(define ('evaluate-module-clauses scope-sym rules () exports symbols)
 	(cons
-		(cons (list (list 'const scope-sym) (list 'quote rules)) rules) exports))
+		(cons (list (list 'const scope-sym) (list 'quote rules)) rules) (cons exports symbols)))
 
-(define ('evaluate-module-clauses-process-result scope-sym clause-tail (rules . exports))
-	('evaluate-module-clauses scope-sym rules clause-tail exports))
+(define ('evaluate-module-clauses-process-result scope-sym clause-tail (rules exports . symbols))
+	('evaluate-module-clauses scope-sym rules clause-tail exports symbols))
 
-(define ('evaluate-module-scope-clause-process-result scope-sym (rules . rslt) exports)
-	(cons rules exports))
-(define ('evaluate-module-clause scope-sym rules clause exports)
+(define ('evaluate-module-scope-clause-process-result scope-sym (rules . rslt) exports symbols)
+	(cons rules (cons exports symbols)))
+(define ('evaluate-module-clause scope-sym rules clause exports symbols)
 	('evaluate-module-scope-clause-process-result scope-sym
-	 ('evaluate-scope-clause scope-sym rules clause) exports))
-(define ('evaluate-module-export-form-clause-process-result scope-sym rules compiled-rule exports)
+	 ('evaluate-scope-clause scope-sym rules clause) exports symbols))
+(define ('evaluate-module-export-form-clause-process-result scope-sym rules compiled-rule exports symbols)
 	(cons
 		(cons compiled-rule rules)
-		(cons compiled-rule exports)))
-(define ('evaluate-module-clause scope-sym rules ('export ptn expr) exports)
+		(cons
+			(cons compiled-rule exports)
+			symbols)))
+(define ('evaluate-module-clause scope-sym rules ('export ptn expr) exports symbols)
 	('evaluate-module-export-form-clause-process-result scope-sym rules
 	 ('compile-scope-rule scope-sym
-		(cons (list (list 'const scope-sym) (list 'quote rules)) rules) ptn expr) exports))
+		(cons (list (list 'const scope-sym) (list 'quote rules)) rules) ptn expr) exports symbols))
 
 (scope
 	(module
