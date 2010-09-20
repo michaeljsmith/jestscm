@@ -70,8 +70,7 @@
 		(let recurse ((rules orig-rules))
 			(define (match-const val fm)
 				(cond
-					((pair? fm) '(#f))
-					((eqv? val fm) '(#t ()))
+					((equal? val fm) '(#t ()))
 					(else '(#f))))
 			(define (match-var name fm)
 				`(#t ((,name ,fm))))
@@ -199,9 +198,12 @@
 (push-base-rule '((const list) 'list))
 (push-base-rule '((const append) 'append))
 
-(push-base-rule '((fm ((const compile-pattern) . (fm ((var rules) . (fm ((var x) . (fm ()))))))) (list 'var x)))
-(push-base-rule '((fm ((const compile-pattern) . (fm ((var rules) . (fm ((fm ()) . (fm ()))))))) '(fm ())))
-(push-base-rule '((fm ((const compile-pattern) . (fm ((var rules) . (fm ((fm ((var hd) . (var tl))) . (fm ())))))))
+(push-base-rule '((fm ((const compile-pattern) . (fm ((var rules) .
+												(fm ((var x) . (fm ()))))))) (list 'var x)))
+(push-base-rule '((fm ((const compile-pattern) . (fm ((var rules) .
+												(fm ((fm ()) . (fm ()))))))) '(fm ())))
+(push-base-rule '((fm ((const compile-pattern) . (fm ((var rules) .
+												(fm ((fm ((var hd) . (var tl))) . (fm ())))))))
 									(list 'fm (cons (compile-pattern rules hd) (compile-pattern rules tl)))))
 (push-base-rule '((fm (
 											 (const compile-pattern) .
@@ -216,8 +218,13 @@
 																				(const quote) .
 																				(fm ((var x) . (fm ()))))) . (fm ()))))) . (fm ())))))))
 									(list 'fm (cons (list 'const 'quote) (list 'var x)))))
-(push-base-rule '((fm ((const compile-rule) . (fm ((var rules) . (fm ((var ptn) . (fm ((var expr) . (fm ())))))))))
+(push-base-rule '((fm ((const compile-rule) . (fm ((var rules) . (fm ((var ptn) . (fm ((var expr) .
+																(fm ())))))))))
 									(list (compile-pattern rules ptn) expr)))
+
+(push-base-rule '((fm ((const compile-pattern) fm ((var rules)
+																				 fm ((fm ((const unquote) fm ((var expr) fm ()))) fm ()))))
+									(list (quote const) (evaluate rules expr))))
 
 (define global-rules base-rules)
 (define (push-global-rule rl)
@@ -258,3 +265,5 @@
 (include-rules-from-file "src/quasiquote.jest" (lambda (fm) (car fm)))
 (include-rules-from-file "src/scope.jest" (lambda (fm) (car fm)))
 (include-rules-from-file "src/module.jest" (lambda (fm) (car fm)))
+
+(printf "Final rules: ~a~n" global-rules)

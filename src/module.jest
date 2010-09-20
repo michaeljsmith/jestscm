@@ -16,17 +16,21 @@
 (define ('evaluate-module-clause scope-sym rules clause exports)
 	('evaluate-module-scope-clause-process-result scope-sym
 	 ('evaluate-scope-clause scope-sym rules clause) exports))
-(define ('evaluate-module-export-clause-process-result scope-sym rules compiled-rule exports)
+(define ('evaluate-module-export-form-clause-process-result scope-sym rules compiled-rule exports)
 	(cons
 		(cons compiled-rule rules)
 		(cons compiled-rule exports)))
 (define ('evaluate-module-clause scope-sym rules ('export ptn expr) exports)
-	('evaluate-module-export-clause-process-result scope-sym rules
-	 ('compile-scope-rule scope-sym rules ptn expr) exports))
+	('evaluate-module-export-form-clause-process-result scope-sym rules
+	 ('compile-scope-rule scope-sym
+		(cons (list (list 'const scope-sym) (list 'quote rules)) rules) ptn expr) exports))
 
 (scope
 	(module
-		(export ('foo x) (+ 2 x))
+		(export 'foo 'foo)
+		(export (,foo x) (+ 2 x))
 		(printf "~a~n" ('foo 3)))
 	('foo 5))
 
+;(define ('compile-pattern rules ('unquote expr))
+;	(list 'const (evaluate rules expr)))
