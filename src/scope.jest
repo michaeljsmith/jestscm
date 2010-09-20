@@ -20,7 +20,7 @@
 (define ('evaluate-scope-clause scope-sym rules ('define ptn expr))
 	(cons
 			; Add new rule.
-			(cons ('compile-scope-rule scope-sym ptn expr) rules)
+			(cons ('compile-scope-rule scope-sym rules ptn expr) rules)
 			(void)))
 
 (define ('extract-bindings-from-pattern ('const val))
@@ -49,11 +49,11 @@
 							(list 'list ''quote scope-sym))
 				(generate-binding-code-from-bindings ('extract-bindings-from-pattern ptn) scope-sym)))
 
-(define ('compile-scope-rule scope-sym ptn expr)
-	(list ('compile-pattern ptn)
+(define ('compile-scope-rule scope-sym rules ptn expr)
+	(list ('compile-pattern rules ptn)
 				(list
 					'evaluate
-					('generate-binding-code-from-pattern ('compile-pattern ptn) scope-sym)
+					('generate-binding-code-from-pattern ('compile-pattern rules ptn) scope-sym)
 					(list 'quote expr))))
 
 ;(scope (printf "hello~n"))
@@ -62,9 +62,6 @@
 ;(scope
 ;	(define 'x 5)
 ;	x)
-
-;('compile-scope-rule 'sam 'x 5)
-;`(a b ,(cons 'b 'c))
 
 ;(scope
 ;	(define ('foo x)

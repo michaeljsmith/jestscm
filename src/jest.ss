@@ -199,25 +199,25 @@
 (push-base-rule '((const list) 'list))
 (push-base-rule '((const append) 'append))
 
-(push-base-rule '((fm ((const compile-pattern) . (fm ((var x) . (fm ()))))) (list 'var x)))
-(push-base-rule '((fm ((const compile-pattern) . (fm ((fm ()) . (fm ()))))) '(fm ())))
-(push-base-rule '((fm ((const compile-pattern) . (fm ((fm ((var hd) . (var tl))) . (fm ())))))
-									(list 'fm (cons (compile-pattern hd) (compile-pattern tl)))))
+(push-base-rule '((fm ((const compile-pattern) . (fm ((var rules) . (fm ((var x) . (fm ()))))))) (list 'var x)))
+(push-base-rule '((fm ((const compile-pattern) . (fm ((var rules) . (fm ((fm ()) . (fm ()))))))) '(fm ())))
+(push-base-rule '((fm ((const compile-pattern) . (fm ((var rules) . (fm ((fm ((var hd) . (var tl))) . (fm ())))))))
+									(list 'fm (cons (compile-pattern rules hd) (compile-pattern rules tl)))))
 (push-base-rule '((fm (
 											 (const compile-pattern) .
-											 (fm ((fm (
+											 (fm ((var rules) . (fm ((fm (
 																 (const quote) .
-																 (fm ((var x).(fm ()))))) . (fm ())))))
+																 (fm ((var x).(fm ()))))) . (fm ())))))))
 									(list 'const x)))
 (push-base-rule '((fm (
 											 (const compile-pattern) .
-											 (fm ((fm ((const quote)
+											 (fm ((var rules) . (fm ((fm ((const quote)
 																 . (fm ((fm (
 																				(const quote) .
-																				(fm ((var x) . (fm ()))))) . (fm ()))))) . (fm ())))))
+																				(fm ((var x) . (fm ()))))) . (fm ()))))) . (fm ())))))))
 									(list 'fm (cons (list 'const 'quote) (list 'var x)))))
-(push-base-rule '((fm ((const compile-rule) . (fm ((var ptn) . (fm ((var expr) . (fm ())))))))
-									(list (compile-pattern ptn) expr)))
+(push-base-rule '((fm ((const compile-rule) . (fm ((var rules) . (fm ((var ptn) . (fm ((var expr) . (fm ())))))))))
+									(list (compile-pattern rules ptn) expr)))
 
 (define global-rules base-rules)
 (define (push-global-rule rl)
@@ -242,7 +242,7 @@
 										 (expr (cddr src)))
 								 (push-global-rule (evaluate-using-rules
 																	 global-rules
-																	 `(compile-rule (quote ,ptn)
+																	 `(compile-rule (quote ,global-rules) (quote ,ptn)
 																									(quote ,(expression-wrapper expr)))))))
 							(else (begin
 											;(printf "Evaluating top-scope: ~a~n" src)

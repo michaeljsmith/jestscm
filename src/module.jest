@@ -22,7 +22,7 @@
 		(cons compiled-rule exports)))
 (define ('evaluate-module-clause scope-sym rules ('export ptn expr) exports)
 	('evaluate-module-export-clause-process-result scope-sym rules
-	 ('compile-scope-rule scope-sym ptn expr) exports))
+	 ('compile-scope-rule scope-sym rules ptn expr) exports))
 
 (scope
 	(module
