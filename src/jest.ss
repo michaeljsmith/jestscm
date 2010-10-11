@@ -25,7 +25,7 @@
 ;  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 ;  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 ;  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-;  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS:wa
+;  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;  IN THE SOFTWARE.
 ;
 ;--------------------------------------------------------------------------------
@@ -34,6 +34,16 @@
 
 (require scheme/list)
 (require scheme/string)
+
+(define (_read-file filename)
+	(call-with-input-file
+		filename
+		(lambda (f)
+			(let read-rest ()
+				(let ((data (read f)))
+					(if (eof-object? data)
+						'()
+						(cons data (read-rest))))))))
 
 (define base-rules '())
 (define-namespace-anchor ns-anchor)
@@ -267,5 +277,4 @@
 (include-rules-from-file "src/quasiquote.jest" (lambda (fm) (car fm)))
 (include-rules-from-file "src/scope.jest" (lambda (fm) (car fm)))
 (include-rules-from-file "src/module.jest" (lambda (fm) (car fm)))
-
-(printf "Final rules: ~a~n" global-rules)
+(include-rules-from-file "src/import.jest" (lambda (fm) (car fm)))

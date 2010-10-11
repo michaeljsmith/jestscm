@@ -1,0 +1,3 @@
+(define ('bar y) (+ y 5))
+(export 'foo 'foo)
+(export (,foo x) ('bar x))
