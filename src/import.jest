@@ -1,16 +1,13 @@
-(define ('evaluate-scope-clause scope-sym rules ('import filename))
-	('evaluate-scope-clause-process-read-file scope-sym rules filename (_read-file filename)))
+(define ('evaluate-scope-clause scope-sym rules ('import modulename))
+	('evaluate-scope-clause-process-read-file scope-sym rules modulename
+	 (_read-file (string-append (symbol->string modulename) ".jest"))))
 
-(define ('evaluate-scope-clause-process-read-file scope-sym rules filename data)
+(define ('evaluate-scope-clause-process-read-file scope-sym rules modulename data)
 	('evaluate-scope-clause scope-sym rules
 	 (cons 'module (cons 'imported-module data))))
 
 (scope
-	(printf "Started.~n")
-
-	(import "src/test.jest")
-
-	(printf "Imported.~n")
+	(import test)
 
 	((imported-module 'foo) 5))
 

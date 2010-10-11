@@ -242,7 +242,21 @@
 (define (push-global-rule rl)
 	(set! global-rules (cons rl global-rules)))
 
-(define (include-rules-from-file filename expression-wrapper)
+(define (directory-name-from-path path)
+	(let find-slashes ((k 0) (p "./") (l (string-length path)))
+		(cond
+			((= k l) p)
+			((char=? (string-ref path k) #\/) (find-slashes (+ 1 k) (substring path 0 k) l))
+			(else (find-slashes (+ 1 k) p l)))))
+
+(define (file-name-from-path path)
+	(let find-slashes ((k 0) (p path) (l (string-length path)))
+		(cond
+			((= k l) p)
+			((char=? (string-ref path k) #\/) (find-slashes (+ 1 k) (substring path (+ 1 k) l) l))
+			(else (find-slashes (+ 1 k) p l)))))
+
+(define (include-rules-from-file path expression-wrapper)
 	(define (load-from-port p)
 		(port-count-lines! p)
 		(let ((rslt (void)))
@@ -271,7 +285,12 @@
 					(if (eof-object? src)
 						rslt
 						(read-next-data))))))
-	(call-with-input-file filename load-from-port))
+	(let ((filename (file-name-from-path path))
+				(dirname (directory-name-from-path path))
+				(olddirname (current-directory)))
+		(current-directory dirname)
+		(call-with-input-file filename load-from-port)
+		(current-directory olddirname)))
 
 (include-rules-from-file "src/evaluate.jest" (lambda (fm) (car fm)))
 (include-rules-from-file "src/quasiquote.jest" (lambda (fm) (car fm)))
