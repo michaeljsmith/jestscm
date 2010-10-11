@@ -289,8 +289,9 @@
 				(dirname (directory-name-from-path path))
 				(olddirname (current-directory)))
 		(current-directory dirname)
-		(call-with-input-file filename load-from-port)
-		(current-directory olddirname)))
+		(let ((rslt (call-with-input-file filename load-from-port)))
+			(current-directory olddirname)
+			rslt)))
 
 (include-rules-from-file "src/evaluate.jest" (lambda (fm) (car fm)))
 (include-rules-from-file "src/quasiquote.jest" (lambda (fm) (car fm)))

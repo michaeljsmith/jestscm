@@ -4,10 +4,9 @@
 
 (define ('evaluate-scope-clause-process-read-file scope-sym rules modulename data)
 	('evaluate-scope-clause scope-sym rules
-	 (cons 'module (cons 'imported-module data))))
+	 (cons 'module (cons modulename data))))
 
 (scope
 	(import test)
 
-	((imported-module 'foo) 5))
-
+	((test 'foo) 5))
