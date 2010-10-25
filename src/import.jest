@@ -6,7 +6,7 @@
 	('evaluate-scope-clause scope-sym rules
 	 (cons 'module (cons modulename data))))
 
-(scope
-	(import test)
-
-	((test 'foo) 5))
+;(scope
+;	(import test)
+;
+;	((test 'foo) 5))

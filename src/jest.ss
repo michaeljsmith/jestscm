@@ -293,8 +293,8 @@
 			(current-directory olddirname)
 			rslt)))
 
-(include-rules-from-file "src/evaluate.jest" (lambda (fm) (car fm)))
 (include-rules-from-file "src/quasiquote.jest" (lambda (fm) (car fm)))
 (include-rules-from-file "src/scope.jest" (lambda (fm) (car fm)))
 (include-rules-from-file "src/module.jest" (lambda (fm) (car fm)))
 (include-rules-from-file "src/import.jest" (lambda (fm) (car fm)))
+(include-rules-from-file "src/simplify.jest" (lambda (fm) (car fm)))
