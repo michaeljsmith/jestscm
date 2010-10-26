@@ -16,7 +16,7 @@
 	('evaluate-scope-clauses scope-sym rules clause-tail rslt))
 
 (define ('evaluate-scope-clause scope-sym rules clause)
-	(cons rules (evaluate (cons (list (list 'const scope-sym) (list 'quote rules)) rules) clause)))
+	(cons rules (_evaluate (cons (list (list 'const scope-sym) (list 'quote rules)) rules) clause)))
 (define ('evaluate-scope-clause scope-sym rules ('define ptn expr))
 	(cons
 			; Add new rule.
@@ -37,7 +37,7 @@
 (define 'generate-binding-code-from-bindings 'generate-binding-code-from-bindings)
 (define ('generate-binding-code-from-bindings (bdng . bdng-tl) scope-sym)
 	(list 'cons
-				 (list 'list (list 'list ''const (list 'quote bdng)) (list 'evaluate '_current-rules bdng))
+				 (list 'list (list 'list ''const (list 'quote bdng)) (list '_evaluate '_current-rules bdng))
 				 (generate-binding-code-from-bindings bdng-tl scope-sym)))
 (define ('generate-binding-code-from-bindings () scope-sym)
 	scope-sym)
@@ -52,7 +52,7 @@
 (define ('compile-scope-rule scope-sym rules ptn expr)
 	(list ('compile-pattern rules ptn)
 				(list
-					'evaluate
+					'_evaluate
 					('generate-binding-code-from-pattern ('compile-pattern rules ptn) scope-sym)
 					(list 'quote expr))))
 

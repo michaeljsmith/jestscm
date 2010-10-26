@@ -7,9 +7,9 @@
 (define ('evaluate-quasiquoted rules (expr-head . expr-tail))
 	(cons ('evaluate-quasiquoted rules expr-head) ('evaluate-quasiquoted rules expr-tail)))
 (define ('evaluate-quasiquoted rules (('unquote-splicing expr-head) . expr-tail))
-	(append (evaluate rules expr-head) ('evaluate-quasiquoted rules expr-tail)))
+	(append (_evaluate rules expr-head) ('evaluate-quasiquoted rules expr-tail)))
 (define ('evaluate-quasiquoted rules ('unquote expr))
-	(evaluate rules expr))
+	(_evaluate rules expr))
 
 (define ('_dispatch rules ('quasiquote expr))
 	('evaluate-quasiquoted rules expr))

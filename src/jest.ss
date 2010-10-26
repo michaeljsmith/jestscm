@@ -157,7 +157,7 @@
 					 ((not (list? in-fm)) (resolve in-fm fallback))
 					 ((eqv? 'quote (car in-fm))
 						(cadr in-fm))
-					 ((eqv? 'evaluate (car in-fm))
+					 ((eqv? '_evaluate (car in-fm))
 						(let* ((rules (evaluate-using-rules-with-fallback scheme-evaluate in-rules (cadr in-fm)))
 									 (fm (evaluate-using-rules-with-fallback scheme-evaluate in-rules (caddr in-fm))))
 							;(printf "Dynamic evaluate (old): rules=~a fm=~a~n" rules fm)
@@ -183,7 +183,7 @@
 				 (cond
 					 ((and (list? orig-fm) (eqv? 'quote (car orig-fm)))
 						(cadr orig-fm))
-					 ((and (list? orig-fm) (eqv? 'evaluate (car orig-fm)))
+					 ((and (list? orig-fm) (eqv? '_evaluate (car orig-fm)))
 						(let* ((rules (evaluate-using-rules orig-rules
 																															(cadr orig-fm)))
 									 (fm (evaluate-using-rules orig-rules (caddr orig-fm))))
@@ -232,7 +232,7 @@
 
 (push-base-rule '((fm ((const compile-pattern) fm ((var rules)
 																				 fm ((fm ((const unquote) fm ((var expr) fm ()))) fm ()))))
-									(list (quote const) (evaluate rules expr))))
+									(list (quote const) (_evaluate rules expr))))
 
 (push-base-rule '((fm ((const compile-rule) . (fm ((var rules) . (fm ((var ptn) . (fm ((var expr) .
 																(fm ())))))))))
@@ -281,7 +281,7 @@
 											;(printf "Evaluating top-scope: ~a~n" src)
 											(set! rslt
 												(evaluate-using-rules global-rules
-																							`(evaluate (quote ,global-rules) (quote ,src))))))))
+																							`(_evaluate (quote ,global-rules) (quote ,src))))))))
 					(if (eof-object? src)
 						rslt
 						(read-next-data))))))

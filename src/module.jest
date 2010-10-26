@@ -46,7 +46,7 @@
 	('second
 	 (printf "Export symbol ~a~n" symbol)
 	 ('evaluate-module-export-symbol-clause-process-result scope-sym rules symbol
-		(evaluate rules expr) exports symbols)))
+		(_evaluate rules expr) exports symbols)))
 
 (define (('module bdngs) symbol)
 	('lookup-module-binding bdngs symbol))
@@ -67,4 +67,4 @@
 ;	((stuff 'foo) 5))
 
 ;(define ('compile-pattern rules ('unquote expr))
-;	(list 'const (evaluate rules expr)))
+;	(list 'const (_evaluate rules expr)))

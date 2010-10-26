@@ -44,7 +44,7 @@
 	('apply-rules rules '()))
 (define ('simplify rules ('quote val))
 	val)
-(define ('simplify old-rules ('evaluate rules expr))
+(define ('simplify old-rules ('_evaluate rules expr))
 	('simplify ('simplify old-rules rules) ('simplify old-rules expr)))
 
 (define ('merge-match-binding (bdng-sym bdng-val) ((bdng-head-sym bdng-head-val) . bdng-tail) merged)
@@ -91,17 +91,17 @@
 ;('simplify
 ; '()
 ; (list
-;	 ''evaluate
+;	 ''_evaluate
 ;	 ''(((fm ((const match-pattern2) fm ((fm ((const var) fm ((var name) fm ()))) fm ((var expr) fm ()))))
 ;			(list (quote succeed) (list (list name expr)))))
 ;	 ''('match-pattern2 '(var a) 1)))
 
-('simplify '()
- (list
-	'evaluate
- ''(((fm ((const match-pattern) fm ((fm ((const const) fm ((var val) fm ()))) fm ((var expr) fm ()))))
-		(list ((quote if) ((quote and) (not (list? expr)) (eqv? val expr)) (quote succeed) (quote fail)) (quote ()))))
- ''('match-pattern '(const a) 'a)))
+;('simplify '()
+; (list
+;	'_evaluate
+; ''(((fm ((const match-pattern) fm ((fm ((const const) fm ((var val) fm ()))) fm ((var expr) fm ()))))
+;		(list ((quote if) ((quote and) (not (list? expr)) (eqv? val expr)) (quote succeed) (quote fail)) (quote ()))))
+; ''('match-pattern '(const a) 'a)))
 
 ;('match-pattern
 ; '(fm ((const compile-pattern) fm ((fm ((const quote) fm ((fm ((const quote) fm ((var x) fm ()))) fm ()) fm ())) fm ())))
