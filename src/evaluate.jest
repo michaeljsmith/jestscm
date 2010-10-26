@@ -25,7 +25,7 @@
 (define ('apply-rules-handle-eval-result expr (success result))
 	result)
 (define ('apply-rules-handle-eval-result expr ('fail result))
-	('evaluate-builtin expr))
+	('_evaluate-builtin expr))
 
 (define ('apply-rules-handle-macro-result rules expr (success result))
 	result)
