@@ -63,7 +63,7 @@
 		;(printf "evaluate-builtin: ~a~n" fm)
 		(eval quoted-list eval-ns)))
 
-(define _evaluate-builtin scheme-evaluate)
+(define _builtin scheme-evaluate)
 
 ; Basic evaluation function, implemented in scheme. This function is the
 ; lowest-level method of evaluating a function, used for bootstrapping
