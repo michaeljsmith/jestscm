@@ -11,7 +11,7 @@
 (define ('evaluate-quasiquoted rules ('unquote expr))
 	(evaluate rules expr))
 
-(define ('_evaluate rules ('quasiquote expr))
+(define ('_dispatch rules ('quasiquote expr))
 	('evaluate-quasiquoted rules expr))
 
 ;(define 'c '(44))

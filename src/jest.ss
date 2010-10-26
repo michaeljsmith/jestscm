@@ -192,7 +192,7 @@
 					 (else
 						 (begin
 							 ;(printf "Standard evaluate: ~a ~a~n" orig-fm orig-rules)
-							 (resolve (list  '_evaluate orig-rules orig-fm) macro-failed)))))))
+							 (resolve (list  '_dispatch orig-rules orig-fm) macro-failed)))))))
 		eval-rslt))
 
 (define (push-base-rule rl)

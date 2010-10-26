@@ -1,9 +1,9 @@
 (define ('second a b) b)
 
-(define ('_evaluate rules '_current-rules)
+(define ('_dispatch rules '_current-rules)
 	rules)
 
-(define ('_evaluate rules ('scope . clauses))
+(define ('_dispatch rules ('scope . clauses))
 	('evaluate-scope-clauses (gensym 'scope) rules clauses (void)))
 
 (define ('evaluate-scope-clauses scope-sym rules (clause-head . clause-tail) last-rslt)

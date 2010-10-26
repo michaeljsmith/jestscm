@@ -34,7 +34,7 @@
 	 ('apply-rules-recurse rules rules expr)))
 (define ('apply-rules rules expr)
 	('apply-rules-handle-macro-result rules expr
-	 ('apply-rules-recurse rules rules (list '_evaluate rules expr))))
+	 ('apply-rules-recurse rules rules (list '_dispatch rules expr))))
 
 (define ('simplify rules expr)
 	('apply-rules rules expr))
